@@ -76,3 +76,6 @@ module:
     aktiv: false
 
 schluesselwoerter: [Balayage, Strähnchen, Pony]
+
+stimme:
+  sprecher: annika   # weiblich; Alternative: mats

@@ -83,13 +83,14 @@ module:
 benachrichtigung:
   webhook_url: ""           # z. B. n8n/Make/Zapier-Webhook → E-Mail, WhatsApp, Slack
 
-# Modelle über LiveKit Inference. Weglassen = Standardwerte.
+# Stimme und Modelle über LiveKit Inference. Weglassen = Standardwerte.
 stimme:
+  sprecher: annika          # annika (weiblich) oder mats (männlich)
+  # Andere Stimme? Statt sprecher beide Zeilen angeben, z. B.:
+  # tts: gradium/default
+  # voice: W4IqRNmU0pbxrKyn
   stt: assemblyai/universal-3-5-pro
   llm: google/gemma-4-31b-it
-  tts: fishaudio/s2.1-pro
-  voice: fa4c9eb3dccc4806b382b40d61c6b10a   # Stimme auf fish.audio auswählen
-  expressive: true
 
 # Angerufene Nummern, die zu diesem Betrieb gehören (für mehrere Betriebe pro Agent)
 telefonnummern: []

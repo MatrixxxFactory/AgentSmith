@@ -1,0 +1,63 @@
+# Beispiel: Restaurant – Tischreservierungen über das Terminmodul
+firma:
+  name: Trattoria Luna
+  branche: Italienisches Restaurant
+  beschreibung: Familiengeführte Trattoria mit hausgemachter Pasta und Pizza aus dem Holzofen, 60 Plätze plus Terrasse.
+  adresse: Schillerplatz 5, 70173 Stuttgart
+  telefon: "0711 5550144"
+  webseite: trattoria-luna.de
+
+assistent:
+  name: Giulia
+  begruessung: Trattoria Luna, buonasera, hier ist Giulia, die digitale Assistentin. Wie kann ich Ihnen helfen?
+  tonfall: warmherzig, gastfreundlich, per Sie
+
+oeffnungszeiten:
+  montag: geschlossen
+  dienstag: ["11:30-14:30", "17:30-22:30"]
+  mittwoch: ["11:30-14:30", "17:30-22:30"]
+  donnerstag: ["11:30-14:30", "17:30-22:30"]
+  freitag: ["11:30-14:30", "17:30-23:30"]
+  samstag: ["17:30-23:30"]
+  sonntag: ["12:00-21:30"]
+
+# Jede "Leistung" ist eine Tischgröße; parallel = Anzahl solcher Tische
+leistungen:
+  - name: Tisch für 1 bis 4 Personen
+    dauer_min: 120
+  - name: Tisch für 5 bis 8 Personen
+    dauer_min: 150
+    beschreibung: Größere Gruppen ab 9 Personen bitte per Rückruf.
+
+faq:
+  - frage: Gibt es vegetarische oder vegane Gerichte?
+    antwort: Ja, mehrere vegetarische Pasta- und Pizzagerichte, vegan auf Nachfrage.
+  - frage: Gibt es glutenfreie Pizza?
+    antwort: Ja, glutenfreier Pizzaboden gegen zwei Euro Aufpreis.
+  - frage: Kann man Essen abholen?
+    antwort: Ja, telefonisch bestellen und nach etwa zwanzig Minuten abholen; Bestellungen nimmt das Team direkt an.
+  - frage: Sind Hunde erlaubt?
+    antwort: Ja, auf der Terrasse und im Gastraum.
+
+regeln:
+  - Frag bei Reservierungen immer nach der Personenzahl und nimm sie in die Notiz auf.
+  - Bestellungen zum Abholen nimmst du nicht selbst an, sondern leitest weiter oder notierst einen Rückruf.
+
+module:
+  termine:
+    aktiv: true
+    raster_min: 30
+    parallel: 10
+    vorlauf_stunden: 1
+    max_tage_voraus: 60
+  rueckruf:
+    aktiv: true
+  weiterleitung:
+    aktiv: true
+    nummer: "+497115550145"
+    nur_waehrend_oeffnungszeiten: true
+    anlaesse:
+      - Bestellung zum Abholen
+      - Der Anrufer möchte ausdrücklich einen Menschen sprechen
+
+schluesselwoerter: [Trattoria, Terrasse, glutenfrei, Tiramisu]

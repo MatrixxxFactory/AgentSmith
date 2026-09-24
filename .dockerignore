@@ -71,3 +71,6 @@ GEMINI.md
 .github/copilot-instructions.md
 .github/personal-instructions.md
 .github/instructions/
+
+# Agent Smith: lokale Laufzeitdaten nie ins Image
+daten/

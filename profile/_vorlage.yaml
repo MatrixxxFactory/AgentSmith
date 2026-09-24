@@ -1,0 +1,98 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# VORLAGE für ein neues Branchenprofil
+#
+# 1. Diese Datei kopieren, z. B. nach profile/kosmetik-studio-anna.yaml
+#    (Dateien mit "_" am Anfang werden nie als Profil geladen)
+# 2. Werte anpassen. Nur firma, assistent und oeffnungszeiten sind Pflicht.
+# 3. Testen:  python -m uv run pytest
+#    Anrufen:  SMITH_PROFIL=kosmetik-studio-anna lk agent console
+# ─────────────────────────────────────────────────────────────────────────────
+
+firma:
+  name: Muster GmbH
+  branche: Musterbranche                # Wird dem Anrufer ggf. genannt
+  beschreibung: Ein bis zwei Sätze, was der Betrieb macht und was ihn auszeichnet.
+  adresse: Musterstraße 1, 12345 Musterstadt
+  telefon: "030 1234567"
+  email: info@example.de
+  webseite: example.de
+
+assistent:
+  name: Smith                           # So stellt sich die KI vor
+  begruessung: Muster GmbH, hier ist Smith, die digitale Assistenz. Wie kann ich Ihnen helfen?
+  tonfall: freundlich, professionell, per Sie
+  sprache: de
+  zeitzone: Europe/Berlin
+
+# Pro Wochentag eine Liste von Zeitspannen, oder "geschlossen".
+# Mittagspause = zwei Spannen: ["08:00-12:00", "13:00-17:00"]
+oeffnungszeiten:
+  montag: ["08:00-17:00"]
+  dienstag: ["08:00-17:00"]
+  mittwoch: ["08:00-17:00"]
+  donnerstag: ["08:00-17:00"]
+  freitag: ["08:00-14:00"]
+  samstag: geschlossen
+  sonntag: geschlossen
+
+# Feiertage, Urlaub, verkürzte Tage. Leere/fehlende "zeiten" = geschlossen.
+sonderzeiten:
+  - von: 2026-12-24
+    bis: 2026-12-26
+    hinweis: Weihnachten
+  - von: 2026-12-31
+    zeiten: ["08:00-12:00"]
+    hinweis: Silvester
+
+# Was kann gebucht/erfragt werden? dauer_min wird für die Terminvergabe genutzt.
+leistungen:
+  - name: Beratungsgespräch
+    dauer_min: 30
+    preis: kostenlos
+    beschreibung: Unverbindliches Erstgespräch.
+
+# Wissen für Anruferfragen. Bis 12 Einträge stehen direkt im Prompt,
+# darüber sucht der Agent per Tool darin (hält den Prompt klein).
+faq:
+  - frage: Gibt es Parkplätze?
+    antwort: Ja, direkt vor dem Haus.
+
+# Zusätzliche Verhaltensregeln speziell für diesen Betrieb
+regeln:
+  - Keine verbindlichen Kostenvoranschläge am Telefon.
+
+# Was tun im Notfall? Leer lassen, wenn es in der Branche keine gibt.
+notfall: ""
+
+module:
+  termine:
+    aktiv: true
+    raster_min: 30          # Termine beginnen im 30-Minuten-Takt
+    parallel: 1             # Wie viele Termine gleichzeitig möglich sind
+    vorlauf_stunden: 2      # Frühester Termin ab jetzt
+    max_tage_voraus: 30
+  rueckruf:
+    aktiv: true
+  weiterleitung:
+    aktiv: false
+    nummer: "+49301234567"  # E.164-Format
+    nur_waehrend_oeffnungszeiten: true
+    anlaesse:
+      - Der Anrufer möchte ausdrücklich einen Menschen sprechen
+
+benachrichtigung:
+  webhook_url: ""           # z. B. n8n/Make/Zapier-Webhook → E-Mail, WhatsApp, Slack
+
+# Modelle über LiveKit Inference. Weglassen = Standardwerte.
+stimme:
+  stt: assemblyai/universal-3-5-pro
+  llm: google/gemma-4-31b-it
+  tts: fishaudio/s2.1-pro
+  voice: fa4c9eb3dccc4806b382b40d61c6b10a   # Stimme auf fish.audio auswählen
+  expressive: true
+
+# Angerufene Nummern, die zu diesem Betrieb gehören (für mehrere Betriebe pro Agent)
+telefonnummern: []
+
+# Namen und Fachbegriffe, die die Spracherkennung sicher erkennen soll
+schluesselwoerter: []

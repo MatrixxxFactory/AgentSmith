@@ -127,3 +127,51 @@ async def test_lehnt_themenfremdes_ab(friseur, tmp_path):
                 intent="Lehnt freundlich ab, weil das nicht zum Friseursalon gehört, "
                 "und gibt keine Anlagetipps.",
             )
+
+
+@pytest.mark.parametrize(
+    ("satz", "datum"),
+    [
+        ("Haben Sie am Mittwoch einen Termin zum Färben frei?", "2026-09-30"),
+        (
+            "Ich hätte gern nächste Woche Mittwoch einen Termin zum Färben.",
+            "2026-10-07",
+        ),
+        ("Geht Färben diesen Donnerstag?", "2026-10-01"),
+    ],
+)
+async def test_wochentage_werden_richtig_aufgeloest(friseur, tmp_path, satz, datum):
+    # Jetzt ist Dienstag, 29.09.2026
+    session, _ = await _sitzung(friseur, tmp_path)
+    async with session:
+        result = await session.run(user_input=satz)
+        aufrufe = [
+            e.item
+            for e in result.events
+            if isinstance(e, FunctionCallEvent)
+            and e.item.name == "freie_termine_suchen"
+        ]
+        if not aufrufe:
+            # Eine Rückfrage ("Welchen Mittwoch meinen Sie?") ist in Ordnung – raten nicht
+            antwort = result.expect.contains_message(role="assistant").event().item
+            assert "?" in antwort.text_content, (
+                f"Weder gesucht noch nachgefragt: {antwort}"
+            )
+            return
+        # Der letzte Aufruf zählt: ein falscher erster wird vom Tool abgelehnt und korrigiert
+        assert datum in aufrufe[-1].arguments
+
+
+async def test_kein_nachsatz_nach_dem_auflegen(friseur, tmp_path):
+    session, _ = await _sitzung(friseur, tmp_path)
+    async with session:
+        result = await session.run(user_input="Das war alles, vielen Dank. Tschüss!")
+        namen = [
+            e.item.name if isinstance(e, FunctionCallEvent) else e.type
+            for e in result.events
+        ]
+        # Auflegen ist erwünscht, aber nicht Pflicht (der Anrufer legt ohnehin auf).
+        # Entscheidend: Nach dem Auflegen darf nichts mehr gesagt werden.
+        if "end_call" in namen:
+            danach = namen[namen.index("end_call") + 1 :]
+            assert "message" not in danach, f"Nach dem Auflegen kam noch: {namen}"

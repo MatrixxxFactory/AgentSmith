@@ -214,3 +214,21 @@ async def test_leere_notizen_werden_nicht_gespeichert(kontext, tmp_path):
     )
     gespeichert = json.loads((tmp_path / "termine.json").read_text(encoding="utf-8"))
     assert gespeichert[0]["notiz"] == ""
+
+
+async def test_falscher_wochentag_wird_abgefangen(kontext):
+    # Genau der Fehler aus dem ersten echten Gespräch: "Mittwoch" -> 1.10. (Donnerstag)
+    termine = TermineModul(kontext)
+    with pytest.raises(
+        ToolError, match=r"ist ein Donnerstag, kein Mittwoch.*2026-09-30"
+    ):
+        await termine.freie_termine_suchen("Färben", "2026-10-01", wochentag="Mittwoch")
+    with pytest.raises(ToolError, match="kein Mittwoch"):
+        await termine.termin_buchen(
+            "Färben", "2026-10-01", "13:30", "Max Berg", "", wochentag="mittwochs"
+        )
+    # Richtig kombiniert oder ohne Wochentag klappt es
+    assert "2026-09-30" in await termine.freie_termine_suchen(
+        "Färben", "2026-09-30", wochentag="Mi"
+    )
+    assert await InfoModul(kontext).oeffnungszeiten_am("2026-10-01", "Donnerstag")

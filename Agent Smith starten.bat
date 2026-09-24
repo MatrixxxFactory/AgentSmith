@@ -32,8 +32,21 @@ echo  Gleich oeffnet sich der Browser. Dort auf "Start" klicken und
 echo  das Mikrofon erlauben. Zum Beenden dieses Fenster schliessen.
 echo.
 
+rem Projektadresse aus .env.local: wss://agent-smith-xyz.livekit.cloud -> d_agent-smith-xyz
+set "projekt="
+for /f "tokens=1,* delims==" %%a in ('findstr /b "LIVEKIT_URL=" .env.local 2^>nul') do set "projekt=%%b"
+if not defined projekt (
+    echo  .env.local fehlt oder enthaelt kein LIVEKIT_URL - bitte zuerst bei LiveKit anmelden.
+    pause
+    exit /b 1
+)
+set projekt=%projekt:"=%
+set "projekt=%projekt:wss://=%"
+set "projekt=%projekt:.livekit.cloud=%"
+set "konsole=https://cloud.livekit.io/projects/d_%projekt%/agents/console?agentName=agent-smith&autoStart=true"
+
 rem Browser erst oeffnen, wenn der Agent bei LiveKit angemeldet ist
-start "" /b cmd /c "timeout /t 12 /nobreak >nul & start "" "https://cloud.livekit.io/projects/p_/agents/console?autoStart=true&agentName=agent-smith""
+start "" /b cmd /c "timeout /t 12 /nobreak >nul & start "" "%konsole%""
 
 lk agent dev
 pause

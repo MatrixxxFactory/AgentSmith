@@ -20,7 +20,10 @@ class Rezeptionist(Agent):
             tools=[
                 *self.module,
                 EndCallTool(
-                    end_instructions="Verabschiede dich kurz und freundlich auf Deutsch.",
+                    # Kein Nachsatz nach dem Auflegen: Die Verabschiedung steht schon im
+                    # selben Zug (siehe Prompt). Eine zweite Antwort brachte Gemma dazu,
+                    # auf Englisch laut über sich selbst nachzudenken.
+                    end_instructions=None,
                     ignore_on_enter=True,
                 ),
             ],

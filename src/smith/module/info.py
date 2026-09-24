@@ -7,20 +7,47 @@ import re
 
 from livekit.agents import ToolError, function_tool
 
-from ..zeit import datum_sprechen, sonderzeit_fuer, zeiten_am, zeiten_text
+from ..zeit import (
+    WOCHENTAG_ANZEIGE,
+    datum_sprechen,
+    sonderzeit_fuer,
+    zeiten_am,
+    zeiten_text,
+)
 from .basis import Modul
 
 # Ab so vielen FAQ-Einträgen wandert das Wissen aus dem Prompt in ein Such-Tool
 FAQ_IM_PROMPT_MAX = 12
 
 
-def datum_parsen(text: str) -> dt.date:
+def datum_parsen(
+    text: str, wochentag: str = "", heute: dt.date | None = None
+) -> dt.date:
+    """Liest JJJJ-MM-TT und prüft, ob es zum genannten Wochentag passt.
+
+    Sprachmodelle verrechnen sich bei Wochentagen gern um einen Tag. Hier fällt das
+    auf, bevor ein Termin am falschen Tag landet.
+    """
     try:
-        return dt.date.fromisoformat(text.strip())
+        datum = dt.date.fromisoformat(text.strip())
     except ValueError as e:
         raise ToolError(
             f"Ungültiges Datum '{text}'. Bitte im Format JJJJ-MM-TT übergeben."
         ) from e
+
+    kuerzel = wochentag.strip().lower()[:2]
+    namen = [t.lower()[:2] for t in WOCHENTAG_ANZEIGE]
+    if kuerzel in namen:
+        genannt = namen.index(kuerzel)
+        if datum.weekday() != genannt:
+            ab = heute or datum
+            naechster = ab + dt.timedelta(days=(genannt - ab.weekday()) % 7)
+            raise ToolError(
+                f"{datum.isoformat()} ist ein {WOCHENTAG_ANZEIGE[datum.weekday()]}, kein "
+                f"{WOCHENTAG_ANZEIGE[genannt]}. Der nächste {WOCHENTAG_ANZEIGE[genannt]} "
+                f"ist {naechster.isoformat()}. Nimm das richtige Datum aus dem Kalender."
+            )
+    return datum
 
 
 def _woerter(text: str) -> set[str]:
@@ -49,16 +76,17 @@ class InfoModul(Modul):
         return ""
 
     @function_tool
-    async def oeffnungszeiten_am(self, datum: str) -> str:
+    async def oeffnungszeiten_am(self, datum: str, wochentag: str = "") -> str:
         """Liefert die Öffnungszeiten an einem bestimmten Datum, inklusive Feiertagen und Betriebsurlaub.
 
         Nutze das, wenn jemand nach einem konkreten Tag fragt (z. B. "Haben Sie am 24. Dezember offen?").
 
         Args:
             datum: Datum im Format JJJJ-MM-TT
+            wochentag: Der Wochentag, den der Anrufer genannt hat (z. B. Mittwoch), zur Kontrolle des Datums. Leer lassen, wenn er keinen genannt hat.
         """
-        tag = datum_parsen(datum)
         heute = self.k.uhr().date()
+        tag = datum_parsen(datum, wochentag, heute)
         text = f"{datum_sprechen(tag, heute)}: {zeiten_text(zeiten_am(self.k.profil, tag))}"
         sonder = sonderzeit_fuer(self.k.profil, tag)
         if sonder and sonder.hinweis:

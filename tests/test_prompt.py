@@ -15,7 +15,13 @@ def test_prompt_enthaelt_betrieb_zeit_und_leistungen(friseur, tmp_path):
     assert "Du bist Lena" in prompt
     assert "Salon Schnittpunkt" in prompt
     assert "Jetzt: Dienstag, 2026-09-29 08:00" in prompt
-    assert "Di 2026-10-06" in prompt  # Kalender der nächsten Tage
+    # Kalender nach Wochen, ausgeschrieben, mit heute/morgen
+    assert (
+        "Diese Woche: Dienstag 2026-09-29 (heute), Mittwoch 2026-09-30 (morgen)"
+        in prompt
+    )
+    assert "Nächste Woche: Montag 2026-10-05, Dienstag 2026-10-06" in prompt
+    assert "Montag 2026-09-28" not in prompt  # Vergangenes weglassen
     assert "Balayage, ab 149 Euro" in prompt
     assert "Kann man mit Karte zahlen?" in prompt
     assert "Der Anruf kommt von +491701234567" in prompt

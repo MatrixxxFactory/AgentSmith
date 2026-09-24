@@ -14,12 +14,32 @@ from .profil import Profil
 from .zeit import WOCHENTAG_ANZEIGE, status_text, wochenplan_text
 
 
-def _kalender_text(heute: dt.date, tage: int = 14) -> str:
-    """Nächste Tage mit Datum – damit das Modell "nächsten Dienstag" korrekt auflöst."""
-    return ", ".join(
-        f"{WOCHENTAG_ANZEIGE[d.weekday()][:2]} {d.isoformat()}"
-        for d in (heute + dt.timedelta(days=i) for i in range(tage))
-    )
+def _kalender_text(heute: dt.date) -> str:
+    """Kalender nach Wochen, Wochentage ausgeschrieben.
+
+    Sprachmodelle rechnen Wochentage oft falsch ("Mittwoch" -> Donnerstag). Mit einer
+    fertigen Tabelle müssen sie nur ablesen; die Tools prüfen zusätzlich den Wochentag.
+    """
+    montag = heute - dt.timedelta(days=heute.weekday())
+    zeilen = []
+    for woche, titel in enumerate(
+        ("Diese Woche", "Nächste Woche", "Übernächste Woche")
+    ):
+        tage = []
+        for i in range(7):
+            tag = montag + dt.timedelta(days=7 * woche + i)
+            if tag < heute:
+                continue
+            zusatz = (
+                " (heute)"
+                if tag == heute
+                else " (morgen)"
+                if tag == heute + dt.timedelta(days=1)
+                else ""
+            )
+            tage.append(f"{WOCHENTAG_ANZEIGE[tag.weekday()]} {tag.isoformat()}{zusatz}")
+        zeilen.append(f"{titel}: {', '.join(tage)}")
+    return "\n".join(zeilen)
 
 
 def systemprompt(
@@ -61,7 +81,8 @@ def systemprompt(
 
     teile.append(
         f"# Zeit\nJetzt: {WOCHENTAG_ANZEIGE[jetzt.weekday()]}, {jetzt:%Y-%m-%d %H:%M}. "
-        f"{status_text(profil, jetzt)}\nKalender: {_kalender_text(jetzt.date())}\n"
+        f"{status_text(profil, jetzt)}\nKalender (Datum immer hier ablesen, nie selbst rechnen):\n"
+        f"{_kalender_text(jetzt.date())}\n"
         f"Reguläre Öffnungszeiten:\n{wochenplan_text(profil)}"
     )
     kommende = [

@@ -120,7 +120,11 @@ class TermineModul(Modul):
 
     @function_tool
     async def freie_termine_suchen(
-        self, leistung: str, datum: str, tageszeit: Tageszeit = "egal"
+        self,
+        leistung: str,
+        datum: str,
+        tageszeit: Tageszeit = "egal",
+        wochentag: str = "",
     ) -> str:
         """Sucht freie Termine für eine Leistung an einem Wunschtag. Ist der Tag voll, werden die nächsten Tage durchsucht.
 
@@ -128,11 +132,12 @@ class TermineModul(Modul):
             leistung: Name der gewünschten Leistung, wie im Angebot aufgeführt
             datum: Wunschtag im Format JJJJ-MM-TT
             tageszeit: Bevorzugte Tageszeit, falls genannt
+            wochentag: Der Wochentag, den der Anrufer genannt hat (z. B. Mittwoch), zur Kontrolle des Datums. Leer lassen, wenn er keinen genannt hat.
         """
-        gewuenscht = datum_parsen(datum)
+        heute = self.k.uhr().date()
+        gewuenscht = datum_parsen(datum, wochentag, heute)
         self._datum_pruefen(gewuenscht)
         gewaehlt = self._leistung(leistung)
-        heute = self.k.uhr().date()
 
         for offset in range(SUCHTAGE_WENN_VOLL + 1):
             tag = gewuenscht + dt.timedelta(days=offset)
@@ -168,6 +173,7 @@ class TermineModul(Modul):
         name: str,
         telefon: str = "",
         notiz: str = "",
+        wochentag: str = "",
     ) -> str:
         """Bucht einen Termin verbindlich. Nur aufrufen, nachdem der Anrufer die Details ausdrücklich bestätigt hat.
 
@@ -178,8 +184,9 @@ class TermineModul(Modul):
             name: Vor- und Nachname des Kunden
             telefon: Rückrufnummer des Kunden. Leer lassen, wenn die Nummer des Anrufers passt.
             notiz: Optionale Zusatzinfo, z. B. Anliegen oder Wünsche. Leer lassen, wenn es keine gibt.
+            wochentag: Der Wochentag, den der Anrufer genannt hat (z. B. Mittwoch), zur Kontrolle des Datums. Leer lassen, wenn er keinen genannt hat.
         """
-        tag = datum_parsen(datum)
+        tag = datum_parsen(datum, wochentag, self.k.uhr().date())
         self._datum_pruefen(tag)
         gewaehlt = self._leistung(leistung)
         try:

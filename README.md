@@ -1,176 +1,148 @@
-<a href="https://livekit.io/">
-  <img src="./.github/assets/livekit-mark.png" alt="LiveKit logo" width="100" height="100">
-</a>
+# Agent Smith – KI-Telefonagent für kleine Betriebe
 
-# LiveKit Agents Starter - Python
+Ein modularer Voice-AI-Telefonagent auf Basis von [LiveKit Agents](https://github.com/livekit/agents).
+Er nimmt Anrufe entgegen, beantwortet Fragen, vergibt Termine, notiert Rückrufe und
+leitet an Menschen weiter – auf Deutsch.
 
-A complete starter project for building voice AI apps with [LiveKit Agents for Python](https://github.com/livekit/agents) and [LiveKit Cloud](https://cloud.livekit.io/).
+**Die Branche ist austauschbar:** Der Code kennt keinen Friseur und keinen Handwerker.
+Alles Betriebsspezifische steht in einer YAML-Datei unter [`profile/`](profile/).
+Neue Zielgruppe = neue Profildatei, kein Code.
 
-The starter project includes:
+## Aufbau
 
-- A simple voice AI assistant, ready for extension and customization
-- A voice AI pipeline built on [LiveKit Inference](https://docs.livekit.io/agents/models/inference), providing zero-configuration access to [models](https://docs.livekit.io/agents/models) from top labs
-  - Uses the fast, open-weight Gemma 4 31B model, [hosted by LiveKit](https://docs.livekit.io/agents/models/llm/livekit/) and tuned for optimal performance in voice AI, as the default LLM
-  - Uses Fish Audio S2.1 Pro for TTS, which renders the inline delivery markup that expressive mode relies on
-  - Supports more than 50 models from OpenAI, Cartesia, Deepgram, and other providers
-  - Access to a wide range of other models, including [Realtime models](https://docs.livekit.io/agents/models/realtime), through extensive plugin ecosystem
-- Expressive mode, enabled by default: the framework injects the TTS provider's markup guide into the LLM prompt, so the model emits inline delivery tags (emotion, pacing, non-verbal sounds) that the TTS renders and the transcript never shows
-- [Keyterms](https://docs.livekit.io/agents/models/stt/keyterms/), enabled by default: static terms bias the STT toward your own names, brands, and jargon, and automatic detection picks up distinctive spellings from the live conversation
-- Eval suite based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/start/testing/)
-- [LiveKit Turn Detector](https://docs.livekit.io/agents/logic/turns/turn-detector/), an end-of-turn model that listens to the user's audio directly, combining semantic understanding with acoustic cues for state-of-the-art accuracy across 14 languages
-- [Background voice cancellation](https://docs.livekit.io/transport/media/noise-cancellation/)
-- Deep session insights from LiveKit [Agent Observability](https://docs.livekit.io/deploy/observability/)
-- A Dockerfile ready for [production deployment to LiveKit Cloud](https://docs.livekit.io/deploy/agents/)
-
-This starter app is compatible with any [custom web/mobile frontend](https://docs.livekit.io/frontends/) or [telephony](https://docs.livekit.io/telephony/).
-
-## Using coding agents
-
-This project is designed to work with coding agents like [Claude Code](https://claude.com/product/claude-code), [Cursor](https://www.cursor.com/), and [Codex](https://openai.com/codex/).
-
-For your convenience, LiveKit offers both a CLI and an [MCP server](https://docs.livekit.io/reference/developer-tools/docs-mcp/) that can be used to browse and search its documentation. The [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/) (`lk docs`) works with any coding agent that can run shell commands. See [Install the LiveKit CLI](#install-the-livekit-cli) below for installation instructions.
-
-Once installed, your coding agent can search and browse LiveKit documentation directly from the terminal:
-
-```console
-lk docs search "voice agents"
-lk docs get-page /agents/start/voice-ai-quickstart
+```
+profile/                  Ein Betrieb pro YAML-Datei (Branche, Zeiten, Leistungen, Module …)
+  _vorlage.yaml           Kommentierte Vorlage für neue Profile
+src/agent.py              LiveKit-Einstieg: wählt Profil, baut Sprach-Pipeline
+src/smith/
+  profil.py               Profil-Schema (pydantic) – Tippfehler im YAML fallen sofort auf
+  zeit.py                 Öffnungszeiten, Sonderzeiten, "ist offen?", Sprechformat
+  prompt.py               Systemprompt aus Profil + aktiven Modulen (bewusst kompakt)
+  rezeptionist.py         Der Agent: Begrüßung, Module, Anruf beenden
+  benachrichtigung.py     Webhook bei Buchung/Absage/Rückruf (→ n8n, Make, Zapier)
+  module/                 Fähigkeiten, je Profil an- und abschaltbar
+    info.py               Öffnungszeiten an einem Datum, FAQ-Suche bei großem Wissen
+    termine.py            Freie Zeiten, buchen, eigene Termine finden, absagen
+    rueckruf.py           Rückrufbitten/Nachrichten aufnehmen
+    weiterleitung.py      Weiterleitung an einen Menschen per SIP REFER
+  speicher/               Schnittstellen + JSON-Ablage (austauschbar gegen echten Kalender)
+tests/                    Unit-Tests (ohne LLM) und Verhaltenstests (mit LLM)
+scenarios.yaml            Ganze simulierte Anrufe (lk agent simulate)
 ```
 
-See the [Using coding agents](https://docs.livekit.io/intro/coding-agents/) guide for more details, including MCP server setup.
+Mitgelieferte Beispielprofile:
 
-The project includes a complete [AGENTS.md](AGENTS.md) file for these assistants. You can modify this file to suit your needs. To learn more about this file, see [https://agents.md](https://agents.md).
+| Profil | Branche | Besonderheit |
+|---|---|---|
+| `friseur-schnittpunkt` | Friseursalon | 2 Stühle parallel, Stornoregeln |
+| `handwerk-sanitaer-mueller` | Sanitär/Heizung | Notfälle (Gas, Rohrbruch), Weiterleitung rund um die Uhr |
+| `physio-bewegt` | Physiotherapie | Keine medizinische Beratung, Hinweis auf 112/116 117 |
+| `restaurant-luna` | Restaurant | Tischreservierung über das Terminmodul |
 
-## Dev Setup
+## Einrichtung
 
-### Install the LiveKit CLI
-
-The [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/) creates the project and runs the agent locally. Install it for your platform:
-
-**macOS:**
-
-```console
-brew install livekit-cli
-```
-
-**Linux:**
-
-```console
-curl -sSL https://get.livekit.io/cli | bash
-```
-
-**Windows:**
-
-```console
-winget install LiveKit.LiveKitCLI
-```
-
-Requires version 2.15.0 or higher. Check your version with `lk --version` and update if needed.
-
-### Create the project
-
-Create a project from this template with the CLI (recommended):
+Voraussetzungen: Python 3.10+, [uv](https://docs.astral.sh/uv/), [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/) (`winget install LiveKit.LiveKitCLI`).
 
 ```bash
-lk cloud auth
-lk agent init my-agent --template agent-starter-python
-```
-
-The CLI clones the template and configures your environment. Then follow the rest of this guide from [Run the agent](#run-the-agent).
-
-<details>
-<summary>Alternative: Set up the project manually</summary>
-
-Clone the repository and install dependencies to a virtual environment:
-
-```console
-cd agent-starter-python
-uv sync
-```
-
-Sign up for [LiveKit Cloud](https://cloud.livekit.io/) then set up the environment by copying `.env.example` to `.env.local` and filling in the required keys:
-
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-
-You can load the LiveKit environment automatically using the [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/):
-
-```bash
+python -m uv sync
+python -m uv run python src/agent.py download-files
 lk cloud auth
 lk app env --write --destination .env.local
 ```
 
-</details>
+## Benutzen
 
-## Run the agent
+**Am einfachsten (Windows):** Doppelklick auf `Agent Smith starten.bat`, Betrieb auswählen.
+Nach ein paar Sekunden öffnet sich der LiveKit-Browser-Playground: auf *Start* klicken,
+Mikrofon erlauben, lossprechen.
 
-The `lk agent` commands run your agent on your own machine. Run them from the project root — the CLI finds `src/agent.py` on its own.
+Oder im Terminal:
 
-Run this command to speak to your agent directly in your terminal:
-
-```console
+```bash
+# Im Terminal mit dem Agenten sprechen (Standardprofil)
 lk agent console
-```
 
-To run the agent for use with a frontend or telephony, use the `dev` command, which adds hot reload on source changes and debug-level logging:
+# Bestimmtes Profil (PowerShell: $env:SMITH_PROFIL="handwerk-sanitaer-mueller")
+SMITH_PROFIL=handwerk-sanitaer-mueller lk agent console
 
-```console
+# Für Web-Playground und Telefonie, mit Hot Reload
 lk agent dev
 ```
 
-To run it in production mode, with clean logging and graceful shutdown, use the `start` command:
+Welches Profil antwortet?
+1. Bei Telefonanrufen: das Profil, dessen `telefonnummern` die gewählte Nummer enthält.
+   So bedient **ein** Agent beliebig viele Betriebe.
+2. Sonst das Profil aus der Umgebungsvariable `SMITH_PROFIL`.
+3. Sonst das alphabetisch erste Profil.
 
-```console
-lk agent start
+Termine, Rückrufe und Anrufprotokolle landen unter `daten/<profil-id>/` (per `.gitignore`
+ausgeschlossen, da personenbezogen).
+
+## Neuen Betrieb / neue Branche anlegen
+
+1. `profile/_vorlage.yaml` kopieren, z. B. nach `profile/kosmetik-anna.yaml`
+2. Firma, Begrüßung, Öffnungszeiten, Leistungen, FAQ, Regeln ausfüllen
+3. Module an-/abschalten (`termine`, `rueckruf`, `weiterleitung`)
+4. `python -m uv run pytest` – prüft u. a., dass jedes Profil gültig ist
+5. `SMITH_PROFIL=kosmetik-anna lk agent console` und ausprobieren
+
+## Neues Modul entwickeln
+
+1. Datei in `src/smith/module/` anlegen, Klasse von `Modul` ableiten
+2. `ist_aktiv(profil)` – wann läuft das Modul mit (meist ein Schalter im Profil)
+3. `anweisungen()` – ein kurzer Absatz für den Prompt: wann welches Tool
+4. Tools mit `@function_tool` als Methoden; Zugriff auf alles über `self.k` (`AnrufKontext`)
+5. In `ALLE_MODULE` in `src/smith/module/__init__.py` eintragen, Schalter in `profil.py` ergänzen
+6. Tests in `tests/test_module.py` schreiben (Tools lassen sich direkt aufrufen)
+
+Ideen für weitere Module: Google Calendar / Cal.com als `Kalender`, SMS-Bestätigung,
+Bestellannahme, Auftragsstatus aus einer Warenwirtschaft, mehrsprachige Anrufer.
+
+## Stimme und Modelle
+
+Pro Profil einstellbar unter `stimme:`. Standard über LiveKit Inference (keine eigenen API-Keys nötig):
+
+| Baustein | Standard | Deutsch |
+|---|---|---|
+| Spracherkennung | `assemblyai/universal-3-5-pro` | ja (`de`, `de-AT`, `de-CH`) |
+| Sprachmodell | `google/gemma-4-31b-it` | ja |
+| Sprachausgabe | `fishaudio/s2.1-pro` | ja; Alternative: `cartesia/sonic-3` |
+
+Die Standardstimme stammt aus der englischen Vorlage. Für einen natürlichen Klang eine
+deutsche Stimme auf [fish.audio](https://fish.audio) wählen und ihre ID bei `stimme.voice` eintragen.
+
+## Telefonie
+
+1. Rufnummer über LiveKit Phone Numbers oder einen SIP-Trunk (z. B. Twilio, Plivo, sipgate) anbinden:
+   [Telefonie-Doku](https://docs.livekit.io/telephony/)
+2. Dispatch-Regel auf den Agentennamen `agent-smith` zeigen lassen
+3. Nummer in `telefonnummern` des Profils eintragen
+4. Für Weiterleitungen muss der Trunk SIP REFER erlauben ([Anleitung](https://docs.livekit.io/telephony/features/transfers/cold/))
+
+## Tests
+
+```bash
+python -m uv run pytest                    # alles; LLM-Tests nur mit .env.local
+python -m uv run ruff format; python -m uv run ruff check
+lk agent simulate --scenarios scenarios.yaml   # ganze Anrufe simulieren (kostet Inference)
 ```
 
-Your deployed agent starts from the `CMD` in the [Dockerfile](Dockerfile) rather than the CLI, since the container image doesn't include `lk`. See [Server startup modes](https://docs.livekit.io/agents/server/startup-modes/) for the full set of options each command accepts.
+Die Unit-Tests nutzen einen festen "Jetzt"-Zeitpunkt (Di, 29.09.2026, 8 Uhr) und laufen ohne Netz.
 
-## Frontend & Telephony
+## Rechtliches (vor dem Echtbetrieb klären)
 
-Get started quickly with our pre-built frontend starter apps, or add telephony support:
+- Anrufer darauf hinweisen, dass sie mit einer KI sprechen (Begrüßung im Profil)
+- Anrufprotokolle enthalten personenbezogene Daten: Aufbewahrungsfrist festlegen, Datenschutzerklärung anpassen,
+  Auftragsverarbeitungsverträge mit LiveKit und den Modellanbietern abschließen
+- Für EU-Datenhaltung LiveKit-Inference-Modelle mit EU-Endpunkt bevorzugen
 
-| Platform | Link | Description |
-|----------|----------|-------------|
-| **Web** | [`livekit-examples/agent-starter-react`](https://github.com/livekit-examples/agent-starter-react) | Web voice AI assistant with React & Next.js |
-| **iOS/macOS** | [`livekit-examples/agent-starter-swift`](https://github.com/livekit-examples/agent-starter-swift) | Native iOS, macOS, and visionOS voice AI assistant |
-| **Flutter** | [`livekit-examples/agent-starter-flutter`](https://github.com/livekit-examples/agent-starter-flutter) | Cross-platform voice AI assistant app |
-| **React Native** | [`livekit-examples/voice-assistant-react-native`](https://github.com/livekit-examples/voice-assistant-react-native) | Native mobile app with React Native & Expo |
-| **Android** | [`livekit-examples/agent-starter-android`](https://github.com/livekit-examples/agent-starter-android) | Native Android app with Kotlin & Jetpack Compose |
-| **Web Embed** | [`livekit-examples/agent-starter-embed`](https://github.com/livekit-examples/agent-starter-embed) | Voice AI widget for any website |
-| **Telephony** | [Documentation](https://docs.livekit.io/telephony/) | Add inbound or outbound calling to your agent |
+## Deployment
 
-For advanced customization, see the [complete frontend guide](https://docs.livekit.io/frontends/).
+Das mitgelieferte `Dockerfile` ist produktionsreif:
+[Deployment auf LiveKit Cloud](https://docs.livekit.io/deploy/agents/) mit `lk agent deploy`.
+Für den Betrieb mit mehreren Agent-Prozessen die JSON-Ablage durch einen echten Kalender
+oder eine Datenbank ersetzen (`src/smith/speicher/`).
 
-## Tests and evals
+## Lizenz
 
-Simulations run full multi-turn conversations between a simulated user and your agent on LiveKit Cloud, then judge each transcript. The scenarios live in [`scenarios.yaml`](scenarios.yaml). Run them locally with the [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/):
-
-```console
-lk agent simulate --scenarios scenarios.yaml
-```
-
-The `Simulations` workflow in `.github/workflows/simulations.yml` runs the same file on every merge to `main` and on demand from the Actions tab. It runs there rather than on every pull request push because each run spends real inference. See the [simulations guide](https://docs.livekit.io/agents/start/testing/simulations/) for how to write scenarios and read results.
-
-For turn-level checks that don't need a live session, the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/start/testing/) runs your agent in-process under `pytest`. A commented-out example lives in [`tests/test_agent.py`](tests/test_agent.py).
-
-## Using this template repo for your own project
-
-Once you've started your own project based on this repo, you should:
-
-1. **Check in your `uv.lock`**: This file is currently untracked for the template, but you should commit it to your repository for reproducible builds and proper configuration management. (The same applies to `livekit.toml`, if you run your agents in LiveKit Cloud)
-
-2. **Add your own repository secrets**: You must [add secrets](https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/using-secrets-in-github-actions) for `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` so that the simulations can run in CI.
-
-## Deploying to production
-
-This project is production-ready and includes a working `Dockerfile`. To deploy it to LiveKit Cloud or another environment, see the [deploying to production](https://docs.livekit.io/deploy/agents/) guide.
-
-## Self-hosted LiveKit
-
-You can also self-host LiveKit instead of using LiveKit Cloud. See the [self-hosting](https://docs.livekit.io/transport/self-hosting/local/) guide for more information. If you choose to self-host, you'll need to also use [model plugins](https://docs.livekit.io/agents/models/#plugins) instead of LiveKit Inference and will need to remove the [LiveKit Cloud noise cancellation](https://docs.livekit.io/transport/media/noise-cancellation/) plugin.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT – siehe [LICENSE](LICENSE). Basiert auf dem LiveKit Agents Starter für Python.

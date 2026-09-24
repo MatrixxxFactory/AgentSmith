@@ -1,0 +1,78 @@
+# Beispiel: Friseursalon mit Terminbuchung, zwei Stühle parallel
+firma:
+  name: Salon Schnittpunkt
+  branche: Friseursalon
+  beschreibung: Friseursalon für Damen, Herren und Kinder, spezialisiert auf Farbe und Balayage.
+  adresse: Lindenstraße 12, 10969 Berlin
+  telefon: "030 5550123"
+  email: hallo@salon-schnittpunkt.de
+  webseite: salon-schnittpunkt.de
+
+assistent:
+  name: Lena
+  begruessung: Salon Schnittpunkt, hier ist Lena, die digitale Assistentin. Wie kann ich Ihnen helfen?
+  tonfall: herzlich, locker, aber per Sie
+
+oeffnungszeiten:
+  montag: geschlossen
+  dienstag: ["09:00-18:00"]
+  mittwoch: ["09:00-18:00"]
+  donnerstag: ["10:00-20:00"]
+  freitag: ["09:00-18:00"]
+  samstag: ["09:00-14:00"]
+  sonntag: geschlossen
+
+sonderzeiten:
+  - von: 2026-12-24
+    bis: 2026-12-27
+    hinweis: Weihnachtspause
+  - von: 2026-12-31
+    zeiten: ["09:00-13:00"]
+    hinweis: Silvester
+
+leistungen:
+  - name: Herrenhaarschnitt
+    dauer_min: 30
+    preis: 32 Euro
+  - name: Damenhaarschnitt
+    dauer_min: 60
+    preis: ab 49 Euro
+    beschreibung: Inklusive Waschen und Föhnen.
+  - name: Kinderhaarschnitt
+    dauer_min: 30
+    preis: 20 Euro
+    beschreibung: Für Kinder bis 12 Jahre.
+  - name: Färben
+    dauer_min: 120
+    preis: ab 79 Euro
+    beschreibung: Preis hängt von Haarlänge und Farbe ab.
+  - name: Balayage
+    dauer_min: 180
+    preis: ab 149 Euro
+
+faq:
+  - frage: Kann man mit Karte zahlen?
+    antwort: Ja, mit EC-Karte, Kreditkarte und Apple Pay.
+  - frage: Gibt es Parkplätze?
+    antwort: Nur Straßenparkplätze. Die U-Bahn Moritzplatz ist drei Minuten entfernt.
+  - frage: Was passiert, wenn ich einen Termin nicht wahrnehmen kann?
+    antwort: Bitte bis 24 Stunden vorher absagen, sonst berechnen wir die Hälfte des Preises.
+  - frage: Kann ich ohne Termin kommen?
+    antwort: Nur wenn gerade ein Stuhl frei ist; mit Termin ist es sicherer.
+
+regeln:
+  - Bei Färben und Balayage erwähne, dass der Endpreis nach Haarlänge im Salon festgelegt wird.
+
+module:
+  termine:
+    aktiv: true
+    raster_min: 30
+    parallel: 2
+    vorlauf_stunden: 2
+    max_tage_voraus: 42
+  rueckruf:
+    aktiv: true
+  weiterleitung:
+    aktiv: false
+
+schluesselwoerter: [Balayage, Strähnchen, Pony]

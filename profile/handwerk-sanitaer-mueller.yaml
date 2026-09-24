@@ -1,0 +1,71 @@
+# Beispiel: Handwerksbetrieb – vor allem Rückrufe, Notdienst-Weiterleitung, Vor-Ort-Termine
+firma:
+  name: Sanitär Müller
+  branche: Sanitär- und Heizungsbetrieb
+  beschreibung: Meisterbetrieb für Sanitär, Heizung und Bäder in Köln und Umgebung, mit Notdienst.
+  adresse: Industriestraße 8, 50735 Köln
+  telefon: "0221 5550199"
+  email: auftrag@sanitaer-mueller.de
+
+assistent:
+  name: Max
+  begruessung: Sanitär Müller, guten Tag, hier ist Max, der digitale Assistent. Worum geht es?
+  tonfall: bodenständig, hilfsbereit, per Sie
+
+oeffnungszeiten:
+  montag: ["07:00-12:00", "13:00-16:30"]
+  dienstag: ["07:00-12:00", "13:00-16:30"]
+  mittwoch: ["07:00-12:00", "13:00-16:30"]
+  donnerstag: ["07:00-12:00", "13:00-16:30"]
+  freitag: ["07:00-13:00"]
+  samstag: geschlossen
+  sonntag: geschlossen
+
+leistungen:
+  - name: Besichtigung vor Ort
+    dauer_min: 60
+    preis: 49 Euro Anfahrt, wird bei Auftrag verrechnet
+    beschreibung: Für Kostenvoranschläge, Badsanierung und größere Reparaturen.
+  - name: Heizungswartung
+    dauer_min: 90
+    preis: ab 129 Euro
+  - name: Kleinreparatur
+    dauer_min: 60
+    preis: nach Aufwand, 68 Euro pro Stunde plus Anfahrt
+    beschreibung: Tropfender Hahn, verstopfter Abfluss, Spülkasten.
+
+faq:
+  - frage: In welchem Gebiet arbeiten Sie?
+    antwort: Köln und rund 25 Kilometer Umkreis, zum Beispiel Leverkusen, Bergisch Gladbach und Hürth.
+  - frage: Bieten Sie Förderberatung für Wärmepumpen an?
+    antwort: Ja, bei einem Vor-Ort-Termin beraten wir auch zu Förderprogrammen.
+
+notfall: >
+  Notfälle sind Wasserrohrbruch, starker Wasseraustritt, kompletter Heizungsausfall im Winter
+  oder Gasgeruch. Bei Gasgeruch: sofort sagen, Fenster öffnen, keine Schalter betätigen, das Haus
+  verlassen und von draußen die Notrufnummer 112 oder den Gasversorger anrufen. Bei
+  Wasseraustritt: raten, den Haupthahn zu schließen. Dann weiterleiten; klappt das nicht,
+  Rückruf als dringend notieren.
+
+regeln:
+  - Frag bei Schäden immer nach der Adresse und einer kurzen Schadensbeschreibung und nimm beides ins Anliegen auf.
+  - Keine Festpreise oder Kostenvoranschläge am Telefon.
+
+module:
+  termine:
+    aktiv: true
+    raster_min: 60
+    parallel: 2
+    vorlauf_stunden: 20
+    max_tage_voraus: 28
+  rueckruf:
+    aktiv: true
+  weiterleitung:
+    aktiv: true
+    nummer: "+492215550100"
+    nur_waehrend_oeffnungszeiten: false
+    anlaesse:
+      - Notfall wie Wasserrohrbruch, Gasgeruch oder Heizungsausfall
+      - Der Anrufer ist Bestandskunde mit laufender Baustelle und möchte den Monteur sprechen
+
+schluesselwoerter: [Therme, Siphon, Spülkasten, Wärmepumpe, Viessmann, Vaillant, Buderus]

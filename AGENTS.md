@@ -4,6 +4,17 @@ This is a LiveKit Agents project. LiveKit Agents is a Python SDK for building vo
 
 The following is a guide for working with this project.
 
+## Agent Smith (project-specific)
+
+This is a modular German-language phone agent for small businesses. Read README.md for the full layout.
+
+- The code is industry-agnostic. Everything business-specific lives in `profile/*.yaml` (schema: `src/smith/profil.py`). Never hardcode a business, industry or opening hours in Python.
+- Capabilities are modules in `src/smith/module/` (subclasses of `Modul`, which is a LiveKit `Toolset`). Each module decides via `ist_aktiv(profil)` whether it runs and contributes a short prompt section via `anweisungen()`. Register new modules in `ALLE_MODULE`.
+- Storage goes through the protocols in `src/smith/speicher/__init__.py`; `JsonAblage` is the default. Swap implementations in `smith.anruf_kontext()`.
+- Tool results and prompts are German. Keep the system prompt compact (`tests/test_prompt.py` enforces a size limit) – latency matters.
+- `uv` may only be available as `python -m uv` on this machine.
+- Unit tests use a fixed clock (`tests/conftest.py`). LLM behaviour tests in `tests/test_agent.py` are skipped without `.env.local`.
+
 ## Project structure
 
 This Python project uses the `uv` package manager. You should always use `uv` to install dependencies and run tests. To run the agent itself, use the LiveKit CLI: `lk agent console` to talk to it in the terminal, `lk agent dev` for a reloading development server, and `lk agent start` for production mode. See the [agent commands reference](https://docs.livekit.io/reference/developer-tools/livekit-cli/agent/) for the options each one accepts.

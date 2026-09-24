@@ -69,3 +69,6 @@ module:
       - Der Anrufer ist Bestandskunde mit laufender Baustelle und möchte den Monteur sprechen
 
 schluesselwoerter: [Therme, Siphon, Spülkasten, Wärmepumpe, Viessmann, Vaillant, Buderus]
+
+stimme:
+  sprecher: mats     # männlich; Alternative: annika

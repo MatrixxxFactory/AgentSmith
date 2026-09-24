@@ -106,10 +106,13 @@ Pro Profil einstellbar unter `stimme:`. Standard über LiveKit Inference (keine 
 |---|---|---|
 | Spracherkennung | `assemblyai/universal-3-5-pro` | ja (`de`, `de-AT`, `de-CH`) |
 | Sprachmodell | `google/gemma-4-31b-it` | ja |
-| Sprachausgabe | `fishaudio/s2.1-pro` | ja; Alternative: `cartesia/sonic-3` |
+| Sprachausgabe | `gradium/default` (Sprecher Annika / Mats) | ja, native deutsche Stimmen |
 
-Die Standardstimme stammt aus der englischen Vorlage. Für einen natürlichen Klang eine
-deutsche Stimme auf [fish.audio](https://fish.audio) wählen und ihre ID bei `stimme.voice` eintragen.
+Stimme wählen: `stimme: {sprecher: annika}` (weiblich) oder `mats` (männlich). Beide sind offizielle
+deutsche Kundenservice-Stimmen von Gradium und beginnen nach ~0,4–0,5 s zu sprechen (die Fish-Audio-Stimme
+der Vorlage brauchte ~1,3 s). Weitere Sprecher in `SPRECHER` in `src/smith/profil.py` eintragen; eine
+beliebige Stimme geht auch direkt über `tts:` + `voice:`
+([Gradium-Stimmen](https://docs.gradium.ai/guides/voices/flagship-voices)).
 
 ## Telefonie
 

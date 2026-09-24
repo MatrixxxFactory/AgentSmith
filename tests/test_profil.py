@@ -4,11 +4,36 @@ from pydantic import ValidationError
 
 from smith.profil import (
     PROFIL_ORDNER,
+    SPRECHER,
     Profil,
+    Stimme,
     alle_profile,
     profil_laden,
     profil_waehlen,
 )
+
+
+def test_sprecher_werden_aufgeloest():
+    assert Stimme().tts == "gradium/default"
+    assert Stimme().voice == SPRECHER["annika"][1]
+    assert Stimme(sprecher="Mats").voice == SPRECHER["mats"][1]
+    # Direkte Angabe hat Vorrang
+    eigene = Stimme(tts="fishaudio/s2.1-pro", voice="abc")
+    assert (eigene.tts, eigene.voice) == ("fishaudio/s2.1-pro", "abc")
+
+
+def test_ungueltige_stimmenangaben():
+    with pytest.raises(ValidationError, match="Verfügbar"):
+        Stimme(sprecher="gibtsnicht")
+    with pytest.raises(ValidationError, match="nur zusammen"):
+        Stimme(voice="abc")
+
+
+def test_beispielprofile_nutzen_annika_und_mats():
+    stimmen = {p.id: p.stimme.voice for p in alle_profile()}
+    assert stimmen["handwerk-sanitaer-mueller"] == SPRECHER["mats"][1]
+    assert stimmen["friseur-schnittpunkt"] == SPRECHER["annika"][1]
+
 
 MINIMAL = {
     "firma": {"name": "Test", "branche": "Test"},

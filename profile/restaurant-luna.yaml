@@ -61,3 +61,6 @@ module:
       - Der Anrufer möchte ausdrücklich einen Menschen sprechen
 
 schluesselwoerter: [Trattoria, Terrasse, glutenfrei, Tiramisu]
+
+stimme:
+  sprecher: annika   # weiblich; Alternative: mats

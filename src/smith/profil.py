@@ -131,12 +131,43 @@ class Benachrichtigung(_Streng):
     webhook_url: str = ""
 
 
+# Ausgewählte deutsche Stimmen: Name -> (TTS-Modell, Stimmen-ID).
+# Gradium-Stimmen sind offizielle Kundenservice-Stimmen und starten am Telefon
+# deutlich schneller als die Fish-Audio-Stimme der Vorlage (~0,5 s statt ~1,3 s).
+SPRECHER: dict[str, tuple[str, str]] = {
+    # weiblich, aufmerksam, effizient
+    "annika": ("gradium/default", "p6Uutkyi3j2iNAUu"),
+    # männlich, aufmerksam, auf den Punkt
+    "mats": ("gradium/default", "Kf5m22mROozoMWj3"),
+}
+
+
 class Stimme(_Streng):
     stt: str = "assemblyai/universal-3-5-pro"
     llm: str = "google/gemma-4-31b-it"
-    tts: str = "fishaudio/s2.1-pro"
-    voice: str = "fa4c9eb3dccc4806b382b40d61c6b10a"
-    expressive: bool = True
+    # Einfach einen Namen aus SPRECHER wählen …
+    sprecher: str = "annika"
+    # … oder Modell und Stimmen-ID direkt angeben (hat Vorrang vor sprecher)
+    tts: str = ""
+    voice: str = ""
+    # Emotions-Markup; nur Stimmen mit Markup-Unterstützung (z. B. Fish Audio) nutzen es
+    expressive: bool = False
+
+    @model_validator(mode="after")
+    def _sprecher_aufloesen(self) -> Stimme:
+        if self.tts and self.voice:
+            return self
+        if self.tts or self.voice:
+            raise ValueError(
+                "tts und voice nur zusammen angeben – oder stattdessen 'sprecher'"
+            )
+        name = self.sprecher.strip().lower()
+        if name not in SPRECHER:
+            raise ValueError(
+                f"Unbekannter Sprecher '{self.sprecher}'. Verfügbar: {', '.join(SPRECHER)}"
+            )
+        self.tts, self.voice = SPRECHER[name]
+        return self
 
 
 class Profil(_Streng):

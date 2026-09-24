@@ -67,3 +67,6 @@ module:
     aktiv: false
 
 schluesselwoerter: [Krankengymnastik, Lymphdrainage, Manuelle Therapie, Heilmittelverordnung]
+
+stimme:
+  sprecher: annika   # weiblich; Alternative: mats

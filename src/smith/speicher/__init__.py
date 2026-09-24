@@ -1,13 +1,14 @@
 """Speicher-Schnittstellen.
 
-Die Module reden nur mit diesen Protokollen. Heute steckt eine JSON-Datei
-dahinter; später lässt sich z. B. Google Calendar, Cal.com oder eine
-Praxissoftware anschließen, ohne ein einziges Modul anzufassen.
+Die Module reden nur mit diesen Protokollen. Dahinter steckt eine JSON-Datei
+(json_ablage.py) oder Google Calendar (google_kalender.py); weitere wie Cal.com
+oder eine Praxissoftware lassen sich anschließen, ohne ein Modul anzufassen.
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import re
 import uuid
 from dataclasses import asdict, dataclass, field
 from typing import Any, Protocol
@@ -15,6 +16,16 @@ from typing import Any, Protocol
 
 def _neue_id() -> str:
     return uuid.uuid4().hex[:8]
+
+
+def telefon_normalisieren(telefon: str) -> str:
+    """Nur Ziffern ohne Landes-/Ortsvorwahl-Null: +49 151… und 0151… sind gleich."""
+    ziffern = re.sub(r"\D", "", telefon)
+    if ziffern.startswith("0049"):
+        ziffern = ziffern[4:]
+    elif ziffern.startswith("49"):
+        ziffern = ziffern[2:]
+    return ziffern.lstrip("0")
 
 
 @dataclass
@@ -27,6 +38,8 @@ class Termin:
     notiz: str = ""
     id: str = field(default_factory=_neue_id)
     status: str = "gebucht"  # oder "abgesagt"
+    # Blockiert alle parallelen Plätze, z. B. ganztägiger Urlaub im Kalender
+    exklusiv: bool = False
     erstellt: dt.datetime = field(
         default_factory=lambda: dt.datetime.now(dt.timezone.utc)
     )

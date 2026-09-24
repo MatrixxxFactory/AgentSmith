@@ -1,0 +1,17 @@
+{
+  "dispatch_rule": {
+    "name": "Agent Smith – alle eingehenden Anrufe",
+    "rule": {
+      "dispatchRuleIndividual": {
+        "roomPrefix": "anruf-"
+      }
+    },
+    "roomConfig": {
+      "agents": [
+        {
+          "agentName": "agent-smith"
+        }
+      ]
+    }
+  }
+}

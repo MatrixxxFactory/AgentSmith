@@ -14,7 +14,7 @@ JETZT = dt.datetime(2026, 9, 29, 8, 0, tzinfo=BERLIN)
 
 class FakeBenachrichtiger(Benachrichtiger):
     def __init__(self, profil: Profil) -> None:
-        super().__init__(profil)
+        super().__init__(profil, kanaele=[])
         self.gesendet: list[tuple[str, dict]] = []
 
     async def senden(self, ereignis: str, daten: dict) -> None:

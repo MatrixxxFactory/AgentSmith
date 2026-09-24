@@ -80,8 +80,13 @@ module:
     anlaesse:
       - Der Anrufer möchte ausdrücklich einen Menschen sprechen
 
-benachrichtigung:
-  webhook_url: ""           # z. B. n8n/Make/Zapier-Webhook → E-Mail, WhatsApp, Slack
+# Wohin landen Termine? "datei" (zum Testen) oder "google" (Google Calendar;
+# Kalender-ID und Dienstkonto stehen in .env.local, siehe README)
+kalender:
+  art: datei
+
+# Benachrichtigungen (Push, E-Mail, Webhook) werden in .env.local eingerichtet,
+# nicht hier – Empfänger und Zugangsdaten gehören nicht ins öffentliche Repo.
 
 # Stimme und Modelle über LiveKit Inference. Weglassen = Standardwerte.
 stimme:

@@ -12,7 +12,9 @@ This is a modular German-language phone agent for small businesses. Read README.
 - Capabilities are modules in `src/smith/module/` (subclasses of `Modul`, which is a LiveKit `Toolset`). Each module decides via `ist_aktiv(profil)` whether it runs and contributes a short prompt section via `anweisungen()`. Register new modules in `ALLE_MODULE`.
 - Storage goes through the protocols in `src/smith/speicher/__init__.py`; `JsonAblage` is the default. Swap implementations in `smith.anruf_kontext()`.
 - Tool results and prompts are German. Keep the system prompt compact (`tests/test_prompt.py` enforces a size limit) – latency matters.
-- `uv` may only be available as `python -m uv` on this machine.
+- The GitHub repo is PUBLIC. Recipients, calendar IDs, tokens and credentials go in `.env.local` only (read via `smith.benachrichtigung.einstellung`, which supports per-profile overrides `SMITH_<PROFIL>_<NAME>`); document new keys in `.env.example` without values. Never put them in `profile/*.yaml`.
+- Notifications must never block a call: `Benachrichtiger.senden` only schedules background tasks.
+- Calendar backends implement the `Kalender` protocol; `GoogleKalender` is tested against a local fake API in `tests/test_google_kalender.py`.
 - Unit tests use a fixed clock (`tests/conftest.py`). LLM behaviour tests in `tests/test_agent.py` are skipped without `.env.local`.
 
 ## Project structure

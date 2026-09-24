@@ -125,6 +125,13 @@ class Module(_Streng):
     weiterleitung: WeiterleitungModul = Field(default_factory=WeiterleitungModul)
 
 
+class Kalender(_Streng):
+    # "datei": Termine in daten/<profil>/termine.json (zum Testen)
+    # "google": Google Calendar – Kalender-ID und Dienstkonto stehen in .env.local
+    #           (SMITH_GOOGLE_KALENDER_ID, SMITH_GOOGLE_DIENSTKONTO)
+    art: Literal["datei", "google"] = "datei"
+
+
 class Benachrichtigung(_Streng):
     # Jede neue Buchung / Rückrufbitte geht als JSON an diese URL
     # (z. B. n8n, Make oder Zapier, die daraus E-Mail oder WhatsApp machen).
@@ -181,6 +188,7 @@ class Profil(_Streng):
     regeln: list[str] = Field(default_factory=list)
     notfall: str = ""
     module: Module = Field(default_factory=Module)
+    kalender: Kalender = Field(default_factory=Kalender)
     benachrichtigung: Benachrichtigung = Field(default_factory=Benachrichtigung)
     stimme: Stimme = Field(default_factory=Stimme)
     telefonnummern: list[str] = Field(default_factory=list)

@@ -22,6 +22,15 @@ _TAGESZEITEN: dict[str, tuple[dt.time, dt.time]] = {
 }
 
 
+_LEERE_NOTIZEN = {"", "-", "keine", "keine notiz", "nichts", "kein", "none", "n/a"}
+
+
+def _notiz_bereinigen(notiz: str) -> str:
+    """Modelle füllen optionale Felder gern mit "keine" – das soll nicht im Kalender landen."""
+    notiz = notiz.strip()
+    return "" if notiz.lower().rstrip(".") in _LEERE_NOTIZEN else notiz
+
+
 def _verteilt(liste: list, anzahl: int) -> list:
     """Wählt gleichmäßig verteilte Einträge, damit nicht nur 9:00, 9:30, 10:00 angeboten wird."""
     if len(liste) <= anzahl:
@@ -90,10 +99,11 @@ class TermineModul(Modul):
                 ende = beginn + dauer
                 im_fenster = fenster is None or fenster[0] <= beginn.time() < fenster[1]
                 if beginn >= fruehestens and im_fenster:
-                    gleichzeitig = sum(
-                        1 for t in belegt if t.beginn < ende and t.ende > beginn
-                    )
-                    if gleichzeitig < einst.parallel:
+                    ueberlappend = [
+                        t for t in belegt if t.beginn < ende and t.ende > beginn
+                    ]
+                    blockiert = any(t.exklusiv for t in ueberlappend)
+                    if not blockiert and len(ueberlappend) < einst.parallel:
                         frei.append(beginn)
                 beginn += raster
         return frei
@@ -167,7 +177,7 @@ class TermineModul(Modul):
             uhrzeit: Beginn im Format HH:MM
             name: Vor- und Nachname des Kunden
             telefon: Rückrufnummer des Kunden. Leer lassen, wenn die Nummer des Anrufers passt.
-            notiz: Optionale Zusatzinfo, z. B. Anliegen oder Wünsche
+            notiz: Optionale Zusatzinfo, z. B. Anliegen oder Wünsche. Leer lassen, wenn es keine gibt.
         """
         tag = datum_parsen(datum)
         self._datum_pruefen(tag)
@@ -195,7 +205,7 @@ class TermineModul(Modul):
                 ende=beginn + dt.timedelta(minutes=gewaehlt.dauer_min),
                 name=name.strip(),
                 telefon=telefon,
-                notiz=notiz.strip(),
+                notiz=_notiz_bereinigen(notiz),
             )
         )
         await self.k.benachrichtiger.senden("termin_gebucht", termin.als_dict())

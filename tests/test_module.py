@@ -205,3 +205,12 @@ def test_weiterleitung_ausserhalb_der_oeffnungszeiten(friseur, tmp_path):
     assert (
         WeiterleitungModul(kontext_fuer(profil, tmp_path, sonntag))._pruefen() is None
     )
+
+
+async def test_leere_notizen_werden_nicht_gespeichert(kontext, tmp_path):
+    termine = TermineModul(kontext)
+    await termine.termin_buchen(
+        "Kinderhaarschnitt", "2026-09-30", "11:00", "Mia", "", "Keine."
+    )
+    gespeichert = json.loads((tmp_path / "termine.json").read_text(encoding="utf-8"))
+    assert gespeichert[0]["notiz"] == ""

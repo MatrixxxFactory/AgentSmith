@@ -9,19 +9,10 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import json
-import re
 from pathlib import Path
 from typing import Any
 
-from . import Nachricht, Termin
-
-
-def _nur_ziffern(telefon: str) -> str:
-    ziffern = re.sub(r"\D", "", telefon)
-    # +49 151… und 0151… sollen als dieselbe Nummer gelten
-    if ziffern.startswith("49"):
-        ziffern = ziffern[2:]
-    return ziffern.lstrip("0")
+from . import Nachricht, Termin, telefon_normalisieren
 
 
 class JsonAblage:
@@ -68,7 +59,7 @@ class JsonAblage:
         return termin
 
     async def termine_von(self, telefon: str, ab: dt.datetime) -> list[Termin]:
-        gesucht = _nur_ziffern(telefon)
+        gesucht = telefon_normalisieren(telefon)
         if not gesucht:
             return []
         return sorted(
@@ -77,7 +68,7 @@ class JsonAblage:
                 for t in self._termine()
                 if t.status == "gebucht"
                 and t.beginn >= ab
-                and _nur_ziffern(t.telefon) == gesucht
+                and telefon_normalisieren(t.telefon) == gesucht
             ),
             key=lambda t: t.beginn,
         )

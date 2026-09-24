@@ -81,6 +81,8 @@ async def anruf(ctx: JobContext):
             )
         except Exception:
             logger.exception("Anrufprotokoll konnte nicht gespeichert werden")
+        # Noch laufende Benachrichtigungen nicht mit dem Prozess abbrechen
+        await kontext.benachrichtiger.abschliessen()
 
     ctx.add_shutdown_callback(anruf_protokollieren)
 

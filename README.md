@@ -19,14 +19,15 @@ src/smith/
   zeit.py                 Öffnungszeiten, Sonderzeiten, "ist offen?", Sprechformat
   prompt.py               Systemprompt aus Profil + aktiven Modulen (bewusst kompakt)
   rezeptionist.py         Der Agent: Begrüßung, Module, Anruf beenden
-  benachrichtigung.py     Webhook bei Buchung/Absage/Rückruf (→ n8n, Make, Zapier)
+  benachrichtigung.py     Push (ntfy), E-Mail, Webhook bei Buchung/Absage/Rückruf – im Hintergrund
   module/                 Fähigkeiten, je Profil an- und abschaltbar
     info.py               Öffnungszeiten an einem Datum, FAQ-Suche bei großem Wissen
     termine.py            Freie Zeiten, buchen, eigene Termine finden, absagen
     rueckruf.py           Rückrufbitten/Nachrichten aufnehmen
     weiterleitung.py      Weiterleitung an einen Menschen per SIP REFER
-  speicher/               Schnittstellen + JSON-Ablage (austauschbar gegen echten Kalender)
+  speicher/               Schnittstellen, JSON-Ablage und Google Calendar
 tests/                    Unit-Tests (ohne LLM) und Verhaltenstests (mit LLM)
+telefonie/                Weiterleitungsregel + Skript zum Verbinden einer Rufnummer
 scenarios.yaml            Ganze simulierte Anrufe (lk agent simulate)
 ```
 
@@ -114,13 +115,62 @@ der Vorlage brauchte ~1,3 s). Weitere Sprecher in `SPRECHER` in `src/smith/profi
 beliebige Stimme geht auch direkt über `tts:` + `voice:`
 ([Gradium-Stimmen](https://docs.gradium.ai/guides/voices/flagship-voices)).
 
+## Benachrichtigungen
+
+Bei jeder Buchung, Absage, Rückrufbitte und Weiterleitung bekommt der Betrieb eine kurze
+Nachricht. Der Versand läuft im Hintergrund, ein langsamer Dienst bremst nie das Gespräch.
+Alle Werte gehören in `.env.local` (Vorlage: `.env.example`), **nie** ins Profil – das Repo ist öffentlich.
+
+| Kanal | Einstellungen | Hinweis |
+|---|---|---|
+| Push aufs Handy | `SMITH_NTFY_THEMA` | App [ntfy](https://ntfy.sh) installieren, Thema abonnieren. Das Thema wirkt wie ein Passwort. |
+| E-Mail | `SMITH_EMAIL_AN`, `SMITH_SMTP_SERVER`, `…_PORT`, `…_BENUTZER`, `…_PASSWORT` | z. B. GMX: `mail.gmx.net`, Port 587 |
+| Webhook | `SMITH_WEBHOOK_URL` | JSON an n8n/Make/Zapier, z. B. für WhatsApp oder Slack |
+
+Mehrere Betriebe? Jeder Wert lässt sich pro Profil überschreiben: `SMITH_<PROFIL>_<NAME>`,
+z. B. `SMITH_HANDWERK_SANITAER_MUELLER_NTFY_THEMA`.
+
+Datenschutz: ntfy.sh ist ein öffentlicher Dienst. Für den Echtbetrieb mit Kundendaten einen
+eigenen ntfy-Server (`SMITH_NTFY_SERVER`) oder E-Mail verwenden.
+
+## Google Calendar
+
+Mit `kalender: {art: google}` im Profil landen Termine direkt im Google Calendar des Betriebs.
+Einträge, die der Betrieb selbst anlegt, blockieren Zeiten: ganztägige (Urlaub) den ganzen Tag,
+Einträge mit „Verfügbarkeit: frei“ gar nicht.
+
+Einmalige Einrichtung (etwa 10 Minuten):
+1. [Google Cloud Console](https://console.cloud.google.com/) → neues Projekt → **Google Calendar API** aktivieren
+2. *IAM & Verwaltung → Dienstkonten* → Dienstkonto anlegen → *Schlüssel → JSON* herunterladen
+3. Die Datei sicher ablegen, z. B. `C:\Users\<du>\.agentsmith\dienstkonto.json` (nicht ins Repo!)
+4. In Google Calendar: Kalender → *Einstellungen und Freigabe* → *Für bestimmte Personen freigeben*
+   → E-Mail-Adresse des Dienstkontos (`…@….iam.gserviceaccount.com`) mit
+   **„Änderungen an Terminen vornehmen“**
+5. Unter *Kalender integrieren* die **Kalender-ID** kopieren
+6. In `.env.local`:
+   ```
+   SMITH_GOOGLE_KALENDER_ID=…@group.calendar.google.com
+   SMITH_GOOGLE_DIENSTKONTO=C:\Users\<du>\.agentsmith\dienstkonto.json
+   ```
+   Für die Cloud statt des Pfads den kompletten Dateiinhalt eintragen (eine Zeile JSON).
+
 ## Telefonie
 
-1. Rufnummer über LiveKit Phone Numbers oder einen SIP-Trunk (z. B. Twilio, Plivo, sipgate) anbinden:
-   [Telefonie-Doku](https://docs.livekit.io/telephony/)
-2. Dispatch-Regel auf den Agentennamen `agent-smith` zeigen lassen
-3. Nummer in `telefonnummern` des Profils eintragen
-4. Für Weiterleitungen muss der Trunk SIP REFER erlauben ([Anleitung](https://docs.livekit.io/telephony/features/transfers/cold/))
+LiveKit verkauft selbst nur US-Nummern. Deutsche Nummern kommen über einen SIP-Anbieter
+(z. B. sipgate trunking, Telnyx, Twilio, easybell):
+
+1. Beim Anbieter eine Nummer buchen und eingehende Anrufe an die **SIP URI** deines
+   LiveKit-Projekts leiten (LiveKit Cloud → *Settings* → *Project*)
+2. Nummer mit LiveKit verbinden:
+   ```bash
+   powershell -ExecutionPolicy Bypass -File telefonie\nummer-verbinden.ps1 -Nummer +4930123456
+   ```
+3. Nummer in `telefonnummern:` des passenden Profils eintragen
+4. Die Weiterleitungsregel zum Agenten `agent-smith` ([`telefonie/dispatch-regel.json`](telefonie/dispatch-regel.json))
+   gilt für alle Nummern; angelegt mit `lk sip dispatch create telefonie/dispatch-regel.json`
+5. Der Agent muss laufen: lokal per Startdatei oder dauerhaft in der Cloud (siehe Deployment)
+6. Für Weiterleitungen an Mitarbeiter muss der Anbieter SIP REFER erlauben
+   ([Anleitung](https://docs.livekit.io/telephony/features/transfers/cold/))
 
 ## Tests
 
@@ -143,8 +193,9 @@ Die Unit-Tests nutzen einen festen "Jetzt"-Zeitpunkt (Di, 29.09.2026, 8 Uhr) und
 
 Das mitgelieferte `Dockerfile` ist produktionsreif:
 [Deployment auf LiveKit Cloud](https://docs.livekit.io/deploy/agents/) mit `lk agent deploy`.
-Für den Betrieb mit mehreren Agent-Prozessen die JSON-Ablage durch einen echten Kalender
-oder eine Datenbank ersetzen (`src/smith/speicher/`).
+Vorher `kalender: {art: google}` nutzen – die JSON-Ablage liegt in der Cloud nur im
+flüchtigen Container. Die Werte aus `.env.local` als Secrets mitgeben
+(`lk agent update-secrets`), das Google-Dienstkonto dabei als JSON-Inhalt statt als Pfad.
 
 ## Lizenz
 

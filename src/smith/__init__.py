@@ -11,21 +11,40 @@ Aufbau:
 
 from __future__ import annotations
 
-from .benachrichtigung import Benachrichtiger
+from .benachrichtigung import Benachrichtiger, einstellung
 from .module import AnrufKontext
 from .profil import PROJEKT_ROOT, Profil, profil_waehlen
 from .rezeptionist import Rezeptionist
+from .speicher import Kalender
+from .speicher.google_kalender import GoogleKalender, dienstkonto_token
 from .speicher.json_ablage import JsonAblage
 
 DATEN_ORDNER = PROJEKT_ROOT / "daten"
 
 
+def kalender_fuer(profil: Profil, ablage: JsonAblage) -> Kalender:
+    if profil.kalender.art == "datei":
+        return ablage
+    kalender_id = einstellung(profil, "GOOGLE_KALENDER_ID")
+    dienstkonto = einstellung(profil, "GOOGLE_DIENSTKONTO")
+    if not (kalender_id and dienstkonto):
+        raise RuntimeError(
+            f"Profil {profil.id} nutzt Google Calendar, aber in .env.local fehlen "
+            "SMITH_GOOGLE_KALENDER_ID und/oder SMITH_GOOGLE_DIENSTKONTO"
+        )
+    return GoogleKalender(
+        kalender_id,
+        dienstkonto_token(dienstkonto),
+        zeitzone=profil.assistent.zeitzone,
+    )
+
+
 def anruf_kontext(profil: Profil, anrufer_nummer: str = "") -> AnrufKontext:
-    """Verdrahtet die Standard-Bausteine. Hier später z. B. Google Calendar einsetzen."""
+    """Verdrahtet die Bausteine passend zum Profil."""
     ablage = JsonAblage(DATEN_ORDNER / profil.id)
     return AnrufKontext(
         profil=profil,
-        kalender=ablage,
+        kalender=kalender_fuer(profil, ablage),
         postfach=ablage,
         protokoll=ablage,
         benachrichtiger=Benachrichtiger(profil),
@@ -40,5 +59,6 @@ __all__ = [
     "Profil",
     "Rezeptionist",
     "anruf_kontext",
+    "kalender_fuer",
     "profil_waehlen",
 ]

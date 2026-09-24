@@ -28,6 +28,25 @@ WOCHENTAGE = (
     "sonntag",
 )
 
+BUNDESLAENDER = (
+    "BB",
+    "BE",
+    "BW",
+    "BY",
+    "HB",
+    "HE",
+    "HH",
+    "MV",
+    "NI",
+    "NW",
+    "RP",
+    "SH",
+    "SL",
+    "SN",
+    "ST",
+    "TH",
+)
+
 _ZEITSPANNE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)-([01]\d|2[0-3]):([0-5]\d)$")
 
 
@@ -183,6 +202,10 @@ class Profil(_Streng):
     assistent: Assistent
     oeffnungszeiten: dict[str, list[str]]
     sonderzeiten: list[Sonderzeit] = Field(default_factory=list)
+    # Gesetzliche Feiertage gelten automatisch als geschlossen (Sonderzeiten haben
+    # Vorrang). Bundesland als Kürzel, z. B. BE, BY, NW; leer = nur bundesweite.
+    bundesland: str = ""
+    feiertage_geschlossen: bool = True
     leistungen: list[Leistung] = Field(default_factory=list)
     faq: list[FAQ] = Field(default_factory=list)
     regeln: list[str] = Field(default_factory=list)
@@ -212,6 +235,16 @@ class Profil(_Streng):
                 zeiten = [z.strip() for z in zeiten.split(",")]
             ergebnis[tag] = _zeitspannen_pruefen(list(zeiten))
         return ergebnis
+
+    @field_validator("bundesland")
+    @classmethod
+    def _bundesland_pruefen(cls, wert: str) -> str:
+        wert = wert.strip().upper()
+        if wert and wert not in BUNDESLAENDER:
+            raise ValueError(
+                f"Unbekanntes Bundesland '{wert}'. Erlaubt: {', '.join(BUNDESLAENDER)}"
+            )
+        return wert
 
     def leistung_finden(self, name: str) -> Leistung | None:
         gesucht = name.strip().lower()

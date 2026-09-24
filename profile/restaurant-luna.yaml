@@ -12,6 +12,11 @@ assistent:
   begruessung: Trattoria Luna, buonasera, hier ist Giulia, die digitale Assistentin. Wie kann ich Ihnen helfen?
   tonfall: warmherzig, gastfreundlich, per Sie
 
+# Gesetzliche Feiertage dieses Bundeslands gelten automatisch als geschlossen
+bundesland: BW
+# Gastronomie hat an Feiertagen meist geöffnet
+feiertage_geschlossen: false
+
 oeffnungszeiten:
   montag: geschlossen
   dienstag: ["11:30-14:30", "17:30-22:30"]

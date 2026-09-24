@@ -14,6 +14,8 @@ This is a modular German-language phone agent for small businesses. Read README.
 - Tool results and prompts are German. Keep the system prompt compact (`tests/test_prompt.py` enforces a size limit) – latency matters.
 - The GitHub repo is PUBLIC. Recipients, calendar IDs, tokens and credentials go in `.env.local` only (read via `smith.benachrichtigung.einstellung`, which supports per-profile overrides `SMITH_<PROFIL>_<NAME>`); document new keys in `.env.example` without values. Never put them in `profile/*.yaml`.
 - Notifications must never block a call: `Benachrichtiger.senden` only schedules background tasks.
+- Prefer deterministic guards in code over prompt rules for anything that must not go wrong (see README "Schutzmechanismen"): e.g. `Bestaetigung` in `module/basis.py` makes booking/cancelling two-step, `datum_parsen` checks the weekday, `Auflegen` refuses to hang up while something is only pending. Gemma follows prompts well but not reliably enough for these.
+- Entry point order matters: start the `AgentSession` before `ctx.connect()` (as in the LiveKit template). Connecting first led to an FFI panic on Windows under load. SIP attributes are read via the server API (`_sip_attribute`), not by joining the room.
 - Calendar backends implement the `Kalender` protocol; `GoogleKalender` is tested against a local fake API in `tests/test_google_kalender.py`.
 - Unit tests use a fixed clock (`tests/conftest.py`). LLM behaviour tests in `tests/test_agent.py` are skipped without `.env.local`.
 

@@ -46,3 +46,11 @@ def test_prompts_bleiben_kompakt(tmp_path):
     # Grober Latenz-Schutz: Prompts sollen nicht unbemerkt ausufern
     for profil in alle_profile():
         assert len(prompt_fuer(profil, tmp_path)) < 6000, profil.id
+
+
+def test_prompt_nennt_anstehende_feiertage(friseur, tmp_path):
+    prompt = prompt_fuer(friseur, tmp_path)
+    assert (
+        "Feiertage (geschlossen): Samstag 2026-10-03 Tag der Deutschen Einheit"
+        in prompt
+    )

@@ -6,7 +6,7 @@ import itertools
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer
-from conftest import BERLIN, FakeBenachrichtiger
+from conftest import BERLIN, FakeBenachrichtiger, bestaetigt
 from livekit.agents import ToolError
 
 from smith import AnrufKontext, JsonAblage, kalender_fuer
@@ -122,8 +122,15 @@ def termine(friseur, google, tmp_path):
 
 
 async def test_buchung_landet_als_kalendereintrag(termine, google):
-    antwort = await termine.termin_buchen(
-        "Damenhaarschnitt", "2026-09-30", "10:00", "Julia Neumann", "", "Spitzen"
+    antwort = await bestaetigt(
+        termine,
+        "termin_buchen",
+        "Damenhaarschnitt",
+        "2026-09-30",
+        "10:00",
+        "Julia Neumann",
+        "",
+        "Spitzen",
     )
     assert antwort.startswith("Gebucht")
     (event,) = google.events.values()
@@ -138,12 +145,24 @@ async def test_buchung_landet_als_kalendereintrag(termine, google):
 async def test_kapazitaet_ueber_den_kalender(termine):
     # Zwei Stühle: zwei Buchungen um 10 Uhr, die dritte scheitert
     for name in ("Anna Berg", "Ben Kraus"):
-        await termine.termin_buchen(
-            "Herrenhaarschnitt", "2026-09-30", "10:00", name, "0170 1"
+        await bestaetigt(
+            termine,
+            "termin_buchen",
+            "Herrenhaarschnitt",
+            "2026-09-30",
+            "10:00",
+            name,
+            "0170 1",
         )
     with pytest.raises(ToolError, match="nicht \\(mehr\\) frei"):
-        await termine.termin_buchen(
-            "Herrenhaarschnitt", "2026-09-30", "10:00", "Cem", "0170 2"
+        await bestaetigt(
+            termine,
+            "termin_buchen",
+            "Herrenhaarschnitt",
+            "2026-09-30",
+            "10:00",
+            "Cem",
+            "0170 2",
         )
 
 
@@ -179,12 +198,24 @@ async def test_eigene_eintraege_des_betriebs_blockieren(termine, google):
 
 async def test_termine_finden_und_absagen(termine, google):
     for tag in ("2026-09-30", "2026-10-02", "2026-10-06"):
-        await termine.termin_buchen(
-            "Herrenhaarschnitt", tag, "11:00", "Lea Wolf", "0170 1234567"
+        await bestaetigt(
+            termine,
+            "termin_buchen",
+            "Herrenhaarschnitt",
+            tag,
+            "11:00",
+            "Lea Wolf",
+            "0170 1234567",
         )
     # Fremder Kunde soll nicht auftauchen
-    await termine.termin_buchen(
-        "Herrenhaarschnitt", "2026-09-30", "12:00", "Max", "0151 999"
+    await bestaetigt(
+        termine,
+        "termin_buchen",
+        "Herrenhaarschnitt",
+        "2026-09-30",
+        "12:00",
+        "Max",
+        "0151 999",
     )
 
     # Drei Treffer über zwei Seiten der API, sortiert
@@ -192,10 +223,12 @@ async def test_termine_finden_und_absagen(termine, google):
     assert liste.count("Lea Wolf") == 3 and "Max" not in liste
     termin_id = liste.split("[id ")[1].split("]")[0]
 
-    assert (await termine.termin_absagen(termin_id)).startswith("Abgesagt")
+    assert (await bestaetigt(termine, "termin_absagen", termin_id)).startswith(
+        "Abgesagt"
+    )
     assert (await termine.termine_des_anrufers_finden("")).count("Lea Wolf") == 2
     with pytest.raises(ToolError):
-        await termine.termin_absagen(termin_id)
+        await bestaetigt(termine, "termin_absagen", termin_id)
 
 
 async def test_fehler_der_api_wird_gemeldet(friseur, google):

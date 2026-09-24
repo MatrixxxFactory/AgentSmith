@@ -21,6 +21,14 @@ class FakeBenachrichtiger(Benachrichtiger):
         self.gesendet.append((ereignis, daten))
 
 
+async def bestaetigt(modul, werkzeug: str, *args, **kwargs):
+    """Spielt "vorlesen – Anrufer sagt Ja – ausführen" für zweistufige Tools durch."""
+    erste = await getattr(modul, werkzeug)(*args, **kwargs)
+    assert erste.startswith("NOCH NICHT"), erste
+    modul.k.anrufer_hat_gesprochen()
+    return await getattr(modul, werkzeug)(*args, **kwargs)
+
+
 def kontext_fuer(
     profil: Profil, ordner, jetzt: dt.datetime = JETZT, anrufer: str = "+491701234567"
 ) -> AnrufKontext:

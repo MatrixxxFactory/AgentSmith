@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import datetime as dt
+from functools import lru_cache
 from zoneinfo import ZoneInfo
+
+import holidays
 
 from .profil import WOCHENTAGE, Profil
 
@@ -34,14 +37,40 @@ def sonderzeit_fuer(profil: Profil, datum: dt.date):
     return None
 
 
+@lru_cache(maxsize=64)
+def _feiertage(bundesland: str, jahr: int) -> dict[dt.date, str]:
+    return dict(
+        holidays.country_holidays(
+            "DE", subdiv=bundesland or None, years=jahr, language="de"
+        )
+    )
+
+
+def feiertag(profil: Profil, datum: dt.date) -> str | None:
+    """Name des gesetzlichen Feiertags am Datum (im Bundesland des Betriebs) oder None."""
+    return _feiertage(profil.bundesland, datum.year).get(datum)
+
+
 def zeiten_am(profil: Profil, datum: dt.date) -> list[tuple[dt.time, dt.time]]:
-    """Öffnungszeiten an einem Datum, Sonderzeiten haben Vorrang."""
+    """Öffnungszeiten an einem Datum. Vorrang: Sonderzeiten, dann Feiertage, dann Wochenplan."""
     sonder = sonderzeit_fuer(profil, datum)
     if sonder is not None:
         texte = sonder.zeiten
+    elif profil.feiertage_geschlossen and feiertag(profil, datum):
+        texte = []
     else:
         texte = profil.oeffnungszeiten.get(WOCHENTAGE[datum.weekday()], [])
     return [_spanne(t) for t in texte]
+
+
+def geschlossen_grund(profil: Profil, datum: dt.date) -> str:
+    """Hinweis, warum an einem Datum abweichend geschlossen ist – für Ansagen."""
+    sonder = sonderzeit_fuer(profil, datum)
+    if sonder is not None:
+        return sonder.hinweis
+    if profil.feiertage_geschlossen and (name := feiertag(profil, datum)):
+        return f"Feiertag: {name}"
+    return ""
 
 
 def ist_offen(profil: Profil, zeitpunkt: dt.datetime) -> bool:
@@ -115,8 +144,8 @@ def status_text(profil: Profil, zeitpunkt: dt.datetime) -> str:
             if von <= zeitpunkt.time() < bis:
                 return f"Der Betrieb ist gerade geöffnet, heute noch bis {uhrzeit_sprechen(bis)}."
     naechste = naechste_oeffnung(profil, zeitpunkt)
-    sonder = sonderzeit_fuer(profil, zeitpunkt.date())
-    hinweis = f" ({sonder.hinweis})" if sonder and sonder.hinweis else ""
+    grund = geschlossen_grund(profil, zeitpunkt.date())
+    hinweis = f" ({grund})" if grund else ""
     if naechste is None:
         return f"Der Betrieb ist gerade geschlossen{hinweis}."
     return (

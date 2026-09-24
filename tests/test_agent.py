@@ -74,7 +74,8 @@ async def test_bucht_nicht_ohne_bestaetigung(friseur, tmp_path):
         result = await session.run(
             user_input="Zehn Uhr klingt gut. Ich bin Tom Berger."
         )
-        assert "termin_buchen" not in _aufgerufene_tools(result)
+        # Das Tool darf zum Vorlesen aufgerufen werden, gebucht sein darf noch nichts
+        assert not (tmp_path / "termine.json").exists(), _aufgerufene_tools(result)
 
 
 async def test_bucht_nach_bestaetigung(friseur, tmp_path):
@@ -92,12 +93,11 @@ async def test_bucht_nach_bestaetigung(friseur, tmp_path):
             "Ja, genau so, bitte buchen.",
             "Ja.",
         ):
-            result = await session.run(user_input=antwort)
-            if "termin_buchen" in _aufgerufene_tools(result):
+            await session.run(user_input=antwort)
+            if (tmp_path / "termine.json").exists():
                 gebucht = True
                 break
         assert gebucht, "Termin wurde auch nach dreifacher Bestätigung nicht gebucht"
-    assert (tmp_path / "termine.json").exists()
 
 
 async def test_notfall_gasgeruch(handwerk, tmp_path):

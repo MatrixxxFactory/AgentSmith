@@ -12,6 +12,9 @@ assistent:
   begruessung: Physiotherapie Bewegt, hier ist Clara, die digitale Praxisassistenz. Wie kann ich helfen?
   tonfall: ruhig, einfühlsam, per Sie
 
+# Gesetzliche Feiertage dieses Bundeslands gelten automatisch als geschlossen
+bundesland: BY
+
 oeffnungszeiten:
   montag: ["07:30-19:00"]
   dienstag: ["07:30-19:00"]

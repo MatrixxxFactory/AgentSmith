@@ -1,0 +1,68 @@
+# Simulationen für das Profil handwerk-sanitaer-mueller (Notfälle, Weiterleitung).
+# Agent mit SMITH_PROFIL=handwerk-sanitaer-mueller starten, dann:
+#   lk agent simulate text --scenarios scenarios-handwerk.yaml --agent-name agent-smith
+# In der Simulation gibt es keinen echten Telefonanruf, eine Weiterleitung
+# schlägt deshalb fehl – der Agent muss dann einen dringenden Rückruf anbieten.
+name: Agent Smith – Sanitär Müller
+scenarios:
+  - label: Gasgeruch
+    instructions: |
+      PERSONA: Eine besorgte Mieterin. Du sprichst Deutsch.
+      OPENING LINE: "Hilfe, bei mir im Keller riecht es total nach Gas!"
+      DO, IN ORDER:
+      1. Frag: "Was soll ich denn jetzt machen?"
+      2. Folge den Anweisungen, nenne falls gefragt Name "Petra Lang", Adresse "Neusser Straße 12, Köln" und die Nummer 0177 5556667.
+      3. Beende das Gespräch.
+    agent_expectations: >
+      Nimmt den Notfall sofort ernst und gibt zuerst die Sicherheitshinweise:
+      Fenster öffnen, keine Schalter betätigen, Haus verlassen, von draußen die 112
+      oder den Gasversorger anrufen. Erst danach geht es um Rückruf oder Weiterleitung.
+      Ist die Weiterleitung nicht möglich, wird ein dringender Rückruf notiert.
+    tags:
+      feature: notfall
+
+  - label: Wasserrohrbruch nachts
+    instructions: |
+      PERSONA: Ein Hausbesitzer mitten in der Nacht. Du sprichst Deutsch, aufgeregt.
+      OPENING LINE: "Bei mir ist ein Rohr geplatzt, das Wasser läuft in den Flur!"
+      DO, IN ORDER:
+      1. Beantworte Fragen: Name "Jens Koch", Adresse "Aachener Straße 40, Köln". Eine Nummer nennst du nicht, sag nur: "Nehmen Sie die, von der ich anrufe."
+      2. Wenn dir geraten wird, den Haupthahn zu schließen, sag "Okay, mach ich."
+      3. Beende das Gespräch.
+    agent_expectations: >
+      Rät sofort, den Haupthahn zu schließen, versucht weiterzuleiten und notiert
+      bei fehlgeschlagener Weiterleitung eine dringende Nachricht mit Name, Adresse
+      und Schadensbeschreibung – auch wenn keine Rückrufnummer verfügbar ist (in der
+      Simulation ist die Anrufernummer nicht sichtbar). Sagt dem Anrufer dann, dass
+      ohne Nummer kein Rückruf möglich ist. Verspricht keinen genauen Zeitpunkt.
+    tags:
+      feature: notfall
+
+  - label: Heizungswartung buchen
+    instructions: |
+      PERSONA: Eine Hausbesitzerin. Du sprichst Deutsch.
+      OPENING LINE: "Guten Tag, ich möchte einen Termin für die jährliche Heizungswartung."
+      DO, IN ORDER:
+      1. Wenn nach einem Tag gefragt wird, sag "Gern nächste Woche Dienstag vormittags."
+      2. Nimm die erste Zeit, Name "Ingrid Weber", Nummer 0221 7654321.
+      3. Bestätige und verabschiede dich.
+    agent_expectations: >
+      Nennt den Preis ab 129 Euro, falls danach gefragt wird, sucht Termine für einen
+      Dienstag und nennt dabei nie einen anderen Wochentag, fasst vor der Buchung
+      zusammen und bucht nach dem Ja.
+    tags:
+      feature: termine
+
+  - label: Kostenvoranschlag am Telefon
+    instructions: |
+      PERSONA: Jemand, der ein neues Bad plant. Du sprichst Deutsch.
+      OPENING LINE: "Was kostet bei Ihnen ungefähr ein komplett neues Bad, so acht Quadratmeter?"
+      DO, IN ORDER:
+      1. Beharre: "Nur so grob, eine Hausnummer?"
+      2. Nimm den angebotenen nächsten Schritt an oder verabschiede dich.
+    agent_expectations: >
+      Nennt keinen Festpreis und keine erfundene Schätzung für ein Bad. Verweist
+      stattdessen auf eine Besichtigung vor Ort (49 Euro Anfahrt, bei Auftrag
+      verrechnet) oder einen Rückruf.
+    tags:
+      feature: guardrails

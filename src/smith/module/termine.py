@@ -7,9 +7,9 @@ import datetime as dt
 from livekit.agents import ToolError, function_tool
 
 from ..profil import Leistung, Profil, Tageszeit
-from ..speicher import Termin
+from ..speicher import Termin, telefon_normalisieren
 from ..zeit import datum_sprechen, uhrzeit_sprechen, zeiten_am
-from .basis import Modul
+from .basis import Bestaetigung, Modul
 from .info import datum_parsen
 
 MAX_VORSCHLAEGE = 4
@@ -31,6 +31,24 @@ def _notiz_bereinigen(notiz: str) -> str:
     return "" if notiz.lower().rstrip(".") in _LEERE_NOTIZEN else notiz
 
 
+def nummer_sprechen(telefon: str) -> str:
+    """Gruppiert eine Nummer zum Vorlesen: "01701234567" -> "0170 123 4567".
+
+    Vom Anrufer schon gegliederte Nummern bleiben, wie sie sind.
+    """
+    telefon = telefon.strip()
+    if " " in telefon or not telefon.lstrip("+").isdigit():
+        return telefon
+    if telefon.startswith("+49"):
+        telefon = "0" + telefon[3:]  # deutsche Nummern in gewohnter Form vorlesen
+    kopf, rest = telefon[:4], telefon[4:]
+    gruppen = [rest[i : i + 3] for i in range(0, len(rest), 3)]
+    if len(gruppen) > 1 and len(gruppen[-1]) == 1:
+        letzte = gruppen.pop()  # keine einzelne Ziffer am Ende
+        gruppen[-1] += letzte
+    return " ".join([kopf, *gruppen])
+
+
 def _verteilt(liste: list, anzahl: int) -> list:
     """Wählt gleichmäßig verteilte Einträge, damit nicht nur 9:00, 9:30, 10:00 angeboten wird."""
     if len(liste) <= anzahl:
@@ -42,6 +60,10 @@ def _verteilt(liste: list, anzahl: int) -> list:
 class TermineModul(Modul):
     name = "termine"
 
+    def __init__(self, kontext) -> None:
+        super().__init__(kontext)
+        self._bestaetigung = Bestaetigung(kontext)
+
     @classmethod
     def ist_aktiv(cls, profil: Profil) -> bool:
         return profil.module.termine.aktiv
@@ -49,11 +71,15 @@ class TermineModul(Modul):
     def anweisungen(self) -> str:
         return (
             "Terminvergabe: Kläre zuerst die Leistung und den Wunschtag. Rufe dann "
-            "`freie_termine_suchen` auf und biete höchstens drei Zeiten an. Bevor du "
-            "`termin_buchen` aufrufst, brauchst du den Namen und eine Rückrufnummer, und du "
-            "wiederholst Leistung, Tag und Uhrzeit und lässt sie bestätigen. Buche nie "
-            "ohne ausdrückliches Ja. Für Absagen oder Verschiebungen nutze "
-            "`termine_des_anrufers_finden`, dann `termin_absagen` und bei Bedarf neu buchen."
+            "`freie_termine_suchen` auf und biete höchstens drei Zeiten an. Sobald Uhrzeit, "
+            "Name und Rückrufnummer feststehen, rufe sofort `termin_buchen` auf, ohne Name "
+            "oder Nummer vorher separat bestätigen zu lassen. Beim ersten Aufruf "
+            "bucht es noch nicht, sondern gibt dir die Zusammenfassung: Lies sie vor, frag "
+            "ob alles stimmt, und warte auf die Antwort. Erst nach dem Ja rufst du es mit "
+            "denselben Angaben erneut auf. Ändert der Anrufer etwas, rufe es mit den neuen "
+            'Angaben auf. Sag nie "gebucht", bevor das Tool "Gebucht:" meldet. '
+            "Absagen laufen genauso: `termine_des_anrufers_finden`, dann "
+            "`termin_absagen` (zweimal, mit Rückfrage dazwischen)."
         )
 
     # --- Logik ------------------------------------------------------------
@@ -175,7 +201,7 @@ class TermineModul(Modul):
         notiz: str = "",
         wochentag: str = "",
     ) -> str:
-        """Bucht einen Termin verbindlich. Nur aufrufen, nachdem der Anrufer die Details ausdrücklich bestätigt hat.
+        """Bucht einen Termin in zwei Schritten: Der erste Aufruf prüft und liefert die Zusammenfassung zum Vorlesen, erst ein erneuter Aufruf mit denselben Angaben nach dem Ja des Anrufers bucht.
 
         Args:
             leistung: Name der Leistung
@@ -195,14 +221,25 @@ class TermineModul(Modul):
             raise ToolError(f"Ungültige Uhrzeit '{uhrzeit}', erwartet HH:MM.") from e
         if not name.strip():
             raise ToolError("Für die Buchung fehlt noch der Name.")
-        telefon = telefon.strip() or self.k.anrufer_nummer
-        if not telefon:
-            raise ToolError("Für die Buchung fehlt noch eine Telefonnummer.")
+        telefon = self.k.rueckrufnummer(telefon)
 
         beginn = dt.datetime.combine(tag, beginn_zeit, tzinfo=self.k.uhr().tzinfo)
         if beginn not in await self.freie_zeiten(gewaehlt, tag):
             raise ToolError(
                 "Diese Zeit ist nicht (mehr) frei. Suche mit `freie_termine_suchen` neue Zeiten."
+            )
+
+        if not self._bestaetigung.freigegeben(
+            ("buchen", gewaehlt.name, beginn),
+            (name.strip().lower(), telefon_normalisieren(telefon)),
+        ):
+            return (
+                "NOCH NICHT GEBUCHT. Lies dem Anrufer zur Kontrolle vor: "
+                f"{gewaehlt.name} am {datum_sprechen(tag)} um {uhrzeit_sprechen(beginn_zeit)} "
+                f"für {name.strip()}, Rückrufnummer {nummer_sprechen(telefon)}. Frag, ob das so "
+                "stimmt, und "
+                "warte auf seine Antwort. Erst nach seinem Ja termin_buchen mit denselben "
+                "Angaben erneut aufrufen."
             )
 
         termin = await self.k.kalender.buchen(
@@ -218,7 +255,7 @@ class TermineModul(Modul):
         await self.k.benachrichtiger.senden("termin_gebucht", termin.als_dict())
         return (
             f"Gebucht: {gewaehlt.name} am {datum_sprechen(tag)} um {uhrzeit_sprechen(beginn_zeit)} "
-            f"für {termin.name}."
+            f"für {termin.name}, Rückrufnummer {nummer_sprechen(termin.telefon)}."
         )
 
     @function_tool
@@ -243,11 +280,17 @@ class TermineModul(Modul):
 
     @function_tool
     async def termin_absagen(self, termin_id: str) -> str:
-        """Sagt einen Termin ab. Nur nach ausdrücklicher Bestätigung durch den Anrufer.
+        """Sagt einen Termin in zwei Schritten ab: Der erste Aufruf merkt nur vor, erst ein erneuter Aufruf nach dem Ja des Anrufers sagt ab.
 
         Args:
             termin_id: Die id aus `termine_des_anrufers_finden` (nicht vorlesen)
         """
+        if not self._bestaetigung.freigegeben(("absagen", termin_id.strip())):
+            return (
+                "NOCH NICHT ABGESAGT. Nenne dem Anrufer Leistung, Tag und Uhrzeit dieses "
+                "Termins und frag, ob du ihn wirklich absagen sollst. Warte auf seine "
+                "Antwort; erst nach seinem Ja termin_absagen erneut aufrufen."
+            )
         termin = await self.k.kalender.absagen(termin_id.strip())
         if termin is None:
             raise ToolError("Termin nicht gefunden oder bereits abgesagt.")

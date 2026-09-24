@@ -11,7 +11,13 @@ import datetime as dt
 from .module import Modul
 from .module.info import FAQ_IM_PROMPT_MAX
 from .profil import Profil
-from .zeit import WOCHENTAG_ANZEIGE, status_text, wochenplan_text
+from .zeit import (
+    WOCHENTAG_ANZEIGE,
+    feiertag,
+    sonderzeit_fuer,
+    status_text,
+    wochenplan_text,
+)
 
 
 def _kalender_text(heute: dt.date) -> str:
@@ -61,9 +67,14 @@ def systemprompt(
         "- Nur gesprochener Fließtext: keine Listen, kein Markdown, keine Emojis.\n"
         "- Kurz: ein bis zwei Sätze pro Antwort, eine Frage auf einmal.\n"
         '- Uhrzeiten sprechen wie "halb zehn" oder "14 Uhr", Telefonnummern ziffernweise in Gruppen.\n'
-        "- Wiederhole Namen und diktierte Nummern einmal zur Kontrolle, bevor du sie speicherst.\n"
+        "- Wiederhole Namen und diktierte Nummern einmal zur Kontrolle, bevor du sie speicherst; "
+        "liefert ein Tool eine Zusammenfassung zum Vorlesen, ist das diese Kontrolle – frag nicht doppelt.\n"
+        "- Frag nie nach etwas, das der Anrufer schon gesagt hat; nutze es.\n"
+        "- Verabschiedet sich der Anrufer schon, stelle keine Rückfrage mehr: bestätige kurz, "
+        "was du erledigt hast, und verabschiede dich.\n"
         "- Nenne nie interne Kennungen, Toolnamen oder technische Details.\n"
-        "- Kündige Nachschauen nie nur an: Rufe das passende Tool sofort im selben Zug auf."
+        "- Kündige nie nur an (nachschauen, verbinden, notieren): Rufe das passende Tool "
+        "sofort im selben Zug auf, ohne auf eine Antwort zu warten."
     )
 
     betrieb = [f"# Betrieb\n{f.name}, {f.branche}."]
@@ -83,7 +94,8 @@ def systemprompt(
         f"# Zeit\nJetzt: {WOCHENTAG_ANZEIGE[jetzt.weekday()]}, {jetzt:%Y-%m-%d %H:%M}. "
         f"{status_text(profil, jetzt)}\nKalender (Datum immer hier ablesen, nie selbst rechnen):\n"
         f"{_kalender_text(jetzt.date())}\n"
-        f"Reguläre Öffnungszeiten:\n{wochenplan_text(profil)}"
+        "Reguläre Öffnungszeiten (genau so nennen, nie zusammenfassen oder vereinfachen):\n"
+        f"{wochenplan_text(profil)}"
     )
     kommende = [
         s
@@ -99,6 +111,22 @@ def systemprompt(
                 + f": {', '.join(s.zeiten) or 'geschlossen'}"
                 + (f" ({s.hinweis})" if s.hinweis else "")
                 for s in kommende
+            )
+        )
+    feiertage = [
+        (tag, name)
+        for i in range(61)
+        if (tag := jetzt.date() + dt.timedelta(days=i))
+        and profil.feiertage_geschlossen
+        and sonderzeit_fuer(profil, tag) is None
+        and (name := feiertag(profil, tag))
+    ]
+    if feiertage:
+        teile.append(
+            "Feiertage (geschlossen): "
+            + "; ".join(
+                f"{WOCHENTAG_ANZEIGE[tag.weekday()]} {tag.isoformat()} {name}"
+                for tag, name in feiertage
             )
         )
 

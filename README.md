@@ -16,7 +16,7 @@ profile/                  Ein Betrieb pro YAML-Datei (Branche, Zeiten, Leistunge
 src/agent.py              LiveKit-Einstieg: wählt Profil, baut Sprach-Pipeline
 src/smith/
   profil.py               Profil-Schema (pydantic) – Tippfehler im YAML fallen sofort auf
-  zeit.py                 Öffnungszeiten, Sonderzeiten, "ist offen?", Sprechformat
+  zeit.py                 Öffnungszeiten, Sonderzeiten, gesetzliche Feiertage, Sprechformat
   prompt.py               Systemprompt aus Profil + aktiven Modulen (bewusst kompakt)
   rezeptionist.py         Der Agent: Begrüßung, Module, Anruf beenden
   benachrichtigung.py     Push (ntfy), E-Mail, Webhook bei Buchung/Absage/Rückruf – im Hintergrund
@@ -177,10 +177,35 @@ LiveKit verkauft selbst nur US-Nummern. Deutsche Nummern kommen über einen SIP-
 ```bash
 python -m uv run pytest                    # alles; LLM-Tests nur mit .env.local
 python -m uv run ruff format; python -m uv run ruff check
-lk agent simulate --scenarios scenarios.yaml   # ganze Anrufe simulieren (kostet Inference)
 ```
 
 Die Unit-Tests nutzen einen festen "Jetzt"-Zeitpunkt (Di, 29.09.2026, 8 Uhr) und laufen ohne Netz.
+
+**Ganze Anrufe simulieren** (kostet etwas LiveKit-Inference): Agent mit dem passenden Profil
+starten (Startdatei oder `lk agent dev`), dann
+
+```bash
+lk agent simulate text --scenarios scenarios.yaml --agent-name agent-smith
+```
+
+`scenarios.yaml` enthält 10 Friseur-Anrufe (Buchung, Korrektur, Absage, Feiertag, englischer
+Anrufer, Manipulationsversuch …), `scenarios-handwerk.yaml` 4 Sanitär-Anrufe (Gasgeruch,
+Rohrbruch, Wartung, Kostenvoranschlag). Achtung: Der Prüfer der Simulation urteilt nicht
+immer richtig – bei "failed" das Gespräch im Agent-Log nachlesen.
+
+### Schutzmechanismen, die nicht vom Sprachmodell abhängen
+
+Aus Tests mit echten und simulierten Anrufen; alle im Code erzwungen und getestet:
+
+| Problem | Schutz |
+|---|---|
+| Modell verrechnet Wochentage ("Mittwoch" → Donnerstag) | Tools prüfen den genannten Wochentag gegen das Datum |
+| Modell fragt "Soll ich buchen?" und bucht sofort | Buchen/Absagen zweistufig: erst vorlesen, ausgeführt erst nach einer Antwort des Anrufers |
+| Modell sagt "gebucht" und legt auf, obwohl nur vorgemerkt | Auflegen wird dann einmal verweigert |
+| "unbekannt" als Telefonnummer, "Unbekannt" als Name | Werden abgelehnt; dringende Nachrichten gehen notfalls ohne Nummer raus |
+| Termine an Feiertagen | Gesetzliche Feiertage je Bundesland automatisch geschlossen |
+| Agent startet nicht (gegenseitiges Warten, Absturz unter Last) | Anrufer-Erkennung per Server-API mit Zeitlimit, Start-Reihenfolge wie LiveKit-Vorlage |
+| Englisches "Nachdenken" nach dem Auflegen | Kein Nachsatz nach `end_call` |
 
 ## Rechtliches (vor dem Echtbetrieb klären)
 

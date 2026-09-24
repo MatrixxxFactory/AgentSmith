@@ -10,7 +10,7 @@ from livekit.agents import ToolError, function_tool
 from ..zeit import (
     WOCHENTAG_ANZEIGE,
     datum_sprechen,
-    sonderzeit_fuer,
+    geschlossen_grund,
     zeiten_am,
     zeiten_text,
 )
@@ -88,9 +88,8 @@ class InfoModul(Modul):
         heute = self.k.uhr().date()
         tag = datum_parsen(datum, wochentag, heute)
         text = f"{datum_sprechen(tag, heute)}: {zeiten_text(zeiten_am(self.k.profil, tag))}"
-        sonder = sonderzeit_fuer(self.k.profil, tag)
-        if sonder and sonder.hinweis:
-            text += f" ({sonder.hinweis})"
+        if grund := geschlossen_grund(self.k.profil, tag):
+            text += f" ({grund})"
         return text
 
     @function_tool

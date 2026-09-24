@@ -13,6 +13,9 @@ assistent:
   begruessung: Salon Schnittpunkt, hier ist Lena, die digitale Assistentin. Wie kann ich Ihnen helfen?
   tonfall: herzlich, locker, aber per Sie
 
+# Gesetzliche Feiertage dieses Bundeslands gelten automatisch als geschlossen
+bundesland: BE
+
 oeffnungszeiten:
   montag: geschlossen
   dienstag: ["09:00-18:00"]

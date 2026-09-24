@@ -24,6 +24,12 @@ assistent:
   sprache: de
   zeitzone: Europe/Berlin
 
+# Gesetzliche Feiertage gelten automatisch als geschlossen (Sonderzeiten haben Vorrang).
+# Bundesland als Kürzel: BB BE BW BY HB HE HH MV NI NW RP SH SL SN ST TH
+# Leer = nur bundesweite Feiertage. Geöffnet an Feiertagen? feiertage_geschlossen: false
+bundesland: BE
+feiertage_geschlossen: true
+
 # Pro Wochentag eine Liste von Zeitspannen, oder "geschlossen".
 # Mittagspause = zwei Spannen: ["08:00-12:00", "13:00-17:00"]
 oeffnungszeiten:

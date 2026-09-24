@@ -8,6 +8,18 @@ from ..profil import Profil
 from ..speicher import Nachricht
 from .basis import Modul
 
+PLATZHALTER_NAMEN = {
+    "",
+    "unbekannt",
+    "anrufer",
+    "anruferin",
+    "kunde",
+    "kundin",
+    "?",
+    "-",
+    "n/a",
+}
+
 
 class RueckrufModul(Modul):
     name = "rueckruf"
@@ -36,11 +48,21 @@ class RueckrufModul(Modul):
             telefon: Rückrufnummer. Leer lassen, wenn die Nummer des Anrufers passt.
             dringend: True, wenn es eilt (z. B. Notfall, Schaden, Fristablauf)
         """
-        nummer = telefon.strip() or self.k.anrufer_nummer
-        if not nummer:
-            raise ToolError("Es fehlt eine Rückrufnummer. Frag danach.")
-        if not name.strip() or not anliegen.strip():
-            raise ToolError("Name und Anliegen werden benötigt.")
+        if not anliegen.strip():
+            raise ToolError("Das Anliegen fehlt noch.")
+        if name.strip().lower() in PLATZHALTER_NAMEN:
+            raise ToolError(
+                "Der Name fehlt noch. Frag den Anrufer nach seinem Namen, bevor du notierst."
+            )
+        ohne_nummer = False
+        try:
+            nummer = self.k.rueckrufnummer(telefon)
+        except ToolError:
+            if not dringend:
+                raise
+            # Im Notfall ist eine Nachricht ohne Nummer besser als keine:
+            # Mit Adresse und Schaden kann der Betrieb trotzdem handeln.
+            nummer, ohne_nummer = "OHNE RÜCKRUFNUMMER", True
         nachricht = await self.k.postfach.ablegen(
             Nachricht(
                 art="rueckruf",
@@ -51,4 +73,11 @@ class RueckrufModul(Modul):
             )
         )
         await self.k.benachrichtiger.senden("rueckruf", nachricht.als_dict())
+        if ohne_nummer:
+            return (
+                "Notiert und ans Team gegangen – aber OHNE Rückrufnummer, ein Rückruf ist "
+                "also NICHT möglich. Sag dem Anrufer genau das und bitte ihn, sich selbst "
+                "noch einmal zu melden, falls sich niemand kümmert. Versprich auf keinen "
+                "Fall einen Rückruf."
+            )
         return "Rückrufbitte ist notiert und wurde an das Team weitergegeben."
